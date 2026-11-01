@@ -773,6 +773,11 @@ export function useDemo(initialTab: Tab = "shop") {
     playFilm(eng, dispatch, () => stateRef.current);
   }, []);
 
+  const focus = useCallback((patch: Partial<State>) => {
+    engineRef.current?.cancel();
+    dispatch({ type: "patch", patch: { typing: false, booted: true, ...patch } });
+  }, []);
+
   const approve = useCallback(() => {
     const current = stateRef.current;
     if (current.phone.view !== "ask") return;
@@ -911,6 +916,7 @@ export function useDemo(initialTab: Tab = "shop") {
     showDigest,
     skip,
     replay: startFilm,
+    focus,
     submit,
     submitLink,
     submitPhoto,

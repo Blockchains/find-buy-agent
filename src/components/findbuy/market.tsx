@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listMarket, probeOffer, readBalances, relayPayment } from "@/lib/market/api";
-import type { Accept, Offer, SourcePage } from "@/lib/market/catalog";
-import { connectWallet, ethereumProvider, signExactPayment, WALLET_LINKS, type ConnectedWallet } from "@/lib/market/wallet";
+import { pickPayable, type Accept, type Offer, type SourcePage } from "@/lib/market/catalog";
+import { challengeEcho, connectWallet, paymentBundle, walletLinks, type ConnectedWallet } from "@/lib/market/wallet";
 
 type PayState = { status: string; detail: string };
 
@@ -27,7 +27,7 @@ export function Market({ seed = "" }: { seed?: string }) {
     let cancelled = false;
     setLoading(true);
     setError("");
-    void listMarket({ data: { source: "all", offset: 0, limit: 24, query } })
+    void listMarket({ data: { source: "all", offset: 0, limit: 100, query } })
       .then((page) => {
         if (cancelled) return;
         setPages(page.sources);
@@ -76,17 +76,18 @@ export function Market({ seed = "" }: { seed?: string }) {
     setPay({ status: "Checking the merchant", detail: offer.url });
     try {
       const probe = await probeOffer({ data: { url: offer.url } });
-      if (probe.status !== 402 && !probe.paymentRequired) {
+      const live = pickPayable(probe.accepts) ?? accept;
+      if (probe.status !== 402 && !probe.paymentRequired && probe.accepts.length === 0) {
         setPay({
           status: `Merchant answered ${probe.status}`,
           detail: probe.snippet.slice(0, 280) || "No 402 payment terms came back. The listing may be stale.",
         });
         return;
       }
-      setPay({ status: "Sign in your wallet", detail: `${accept.priceLabel} to ${short(accept.payTo)} on ${accept.networkLabel}` });
-      const paymentSignature = await signExactPayment(wallet.address, offer.url, offer.description, accept);
+      setPay({ status: "Sign in your wallet", detail: `${live.priceLabel} to ${short(live.payTo)} on ${live.networkLabel}` });
+      const payment = await paymentBundle(wallet.address, offer.url, offer.description, live, challengeEcho(probe.paymentRequired, live));
       setPay({ status: "Settling", detail: "The signed authorization is going back to the merchant. Your key never left the wallet." });
-      const settled = await relayPayment({ data: { url: offer.url, paymentSignature } });
+      const settled = await relayPayment({ data: { url: offer.url, paymentSignature: payment.v2, legacyPayment: payment.v1 } });
       setPay({
         status: settled.status >= 200 && settled.status < 300 ? "Paid" : `Merchant answered ${settled.status}`,
         detail: settled.snippet.slice(0, 360) || "No body.",
@@ -113,7 +114,7 @@ export function Market({ seed = "" }: { seed?: string }) {
             Coinbase Bazaar, Circle, and Binance B402, read live. Stablecoin and x402 resources only. Nothing here is a sample product.
           </p>
         </div>
-        <WalletChip wallet={wallet} balances={balances} onConnect={connect} injected={Boolean(ethereumProvider())} />
+        <WalletChip wallet={wallet} balances={balances} onConnect={connect} />
       </div>
       <form
         className="market-search"
@@ -148,6 +149,16 @@ export function Market({ seed = "" }: { seed?: string }) {
           <p className="kicker">{picked.sourceLabel}</p>
           <h3>{picked.name}</h3>
           <p>{picked.description || "No description filed with the registry."}</p>
+          {picked.usage?.call ? <p className="offer-url">{picked.usage.call}</p> : null}
+          {picked.usage?.inputs ? <pre className="offer-url">{picked.usage.inputs}</pre> : null}
+          {picked.usage?.returns ? <p>Returns {picked.usage.returns}</p> : null}
+          {picked.usage?.docs ? (
+            <p>
+              <a href={picked.usage.docs} target="_blank" rel="noreferrer">
+                How to call it
+              </a>
+            </p>
+          ) : null}
           <p className="offer-url">
             <a href={picked.url} target="_blank" rel="noreferrer">
               {picked.url}
@@ -224,25 +235,19 @@ function WalletChip({
   wallet,
   balances,
   onConnect,
-  injected,
 }: {
   wallet: ConnectedWallet | null;
   balances: { baseUsdc: string; monad: string } | null;
   onConnect: () => void;
-  injected: boolean;
 }) {
   if (!wallet) {
     return (
       <div className="wallet-chip">
-        {injected ? (
-          <button type="button" onClick={onConnect}>
-            Connect wallet
-          </button>
-        ) : (
-          <p>Open this page in a wallet. Same pattern as monaf: the wallet holds the key.</p>
-        )}
+        <button type="button" onClick={onConnect}>
+          Connect wallet
+        </button>
         <div className="wallet-links">
-          {WALLET_LINKS.map((link) => (
+          {walletLinks().map((link) => (
             <a key={link.name} href={link.href} target="_blank" rel="noreferrer">
               {link.name}
             </a>

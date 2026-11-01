@@ -46,20 +46,64 @@ const CHAINS: Record<string, { chainId: string; chainName: string; rpc: string; 
     symbol: "ETH",
     explorer: "https://etherscan.io",
   },
+  "10": {
+    chainId: "0xa",
+    chainName: "Optimism",
+    rpc: "https://mainnet.optimism.io",
+    symbol: "ETH",
+    explorer: "https://optimistic.etherscan.io",
+  },
+  "56": {
+    chainId: "0x38",
+    chainName: "BNB Smart Chain",
+    rpc: "https://bsc-dataseed.binance.org",
+    symbol: "BNB",
+    explorer: "https://bscscan.com",
+  },
+  "43114": {
+    chainId: "0xa86a",
+    chainName: "Avalanche",
+    rpc: "https://api.avax.network/ext/bc/C/rpc",
+    symbol: "AVAX",
+    explorer: "https://snowtrace.io",
+  },
 };
 
+let active: EthereumProvider | null = null;
+
+function readInjected(): EthereumProvider | null {
+  if (typeof window === "undefined") return null;
+  const win = window as Window & {
+    ethereum?: EthereumProvider;
+    coinbaseWalletExtension?: EthereumProvider;
+    phantom?: { ethereum?: EthereumProvider };
+    okxwallet?: EthereumProvider;
+  };
+  return win.ethereum ?? win.coinbaseWalletExtension ?? win.phantom?.ethereum ?? win.okxwallet ?? null;
+}
+
 export function ethereumProvider(): EthereumProvider | null {
-  const win = window as Window & { ethereum?: EthereumProvider };
-  return win.ethereum ?? null;
+  return active ?? readInjected();
+}
+
+async function coinbaseProvider(): Promise<EthereumProvider> {
+  const { createCoinbaseWalletSDK } = await import("@coinbase/wallet-sdk");
+  const sdk = createCoinbaseWalletSDK({
+    appName: "Find & Buy Agent",
+    appLogoUrl: "https://findbuyagent.com/favicon.svg",
+    preference: { options: "all" },
+  });
+  return sdk.getProvider() as unknown as EthereumProvider;
 }
 
 export async function connectWallet(): Promise<ConnectedWallet> {
-  const ethereum = ethereumProvider();
-  if (!ethereum) throw new Error("No wallet in this browser. Open Find & Buy inside the wallet, the same way monaf does.");
-  const accounts = (await ethereum.request({ method: "eth_requestAccounts" })) as string[];
-  const address = accounts[0];
+  const provider = readInjected();
+  if (!provider) throw new Error("Open Find & Buy inside your wallet, then tap Buy. Nothing is spent in this browser.");
+  active = provider;
+  const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+  const address = accounts?.[0];
   if (!address) throw new Error("The wallet did not return an account.");
-  const chainId = String(await ethereum.request({ method: "eth_chainId" }));
+  const chainId = String(await provider.request({ method: "eth_chainId" }));
   return { address, chainId };
 }
 
@@ -89,11 +133,61 @@ export async function ensureChain(network: string): Promise<void> {
   }
 }
 
-export async function signExactPayment(account: string, resourceUrl: string, description: string, accept: Accept): Promise<string> {
+const LEGACY_NAMES: Record<string, string> = {
+  "eip155:8453": "base",
+  "eip155:84532": "base-sepolia",
+  "eip155:1": "ethereum",
+  "eip155:137": "polygon",
+  "eip155:42161": "arbitrum",
+  "eip155:10": "optimism",
+  "eip155:43114": "avalanche",
+  "eip155:56": "bsc",
+};
+
+function normalizeSignature(signature: string): string {
+  const hex = signature.startsWith("0x") ? signature.slice(2) : signature;
+  if (hex.length !== 130) {
+    throw new Error("This wallet returned a smart-account signature this merchant cannot settle. Pay from a regular account on the selected chain.");
+  }
+  const v = Number.parseInt(hex.slice(128), 16);
+  const fixed = v < 27 ? v + 27 : v;
+  if (fixed !== 27 && fixed !== 28) throw new Error("The wallet signature could not be checked. Nothing was spent.");
+  return `0x${hex.slice(0, 128)}${fixed.toString(16).padStart(2, "0")}`;
+}
+
+function encodePayload(value: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+export function challengeEcho(header: string, accept: Accept): { resource?: unknown; accepted?: unknown; extensions?: unknown } | undefined {
+  if (!header) return undefined;
+  try {
+    const parsed = JSON.parse(header) as { resource?: unknown; accepts?: Record<string, unknown>[]; extensions?: unknown };
+    const accepts = parsed.accepts ?? [];
+    const accepted =
+      accepts.find((item) => String(item.network) === accept.network && String(item.asset).toLowerCase() === accept.asset.toLowerCase()) ??
+      accepts.find((item) => String(item.scheme) === "exact" && String(item.network).toLowerCase().includes(accept.network.split(":")[1] ?? "8453")) ??
+      accepts[0];
+    return { resource: parsed.resource, accepted, extensions: parsed.extensions };
+  } catch {
+    return undefined;
+  }
+}
+
+export async function paymentBundle(
+  account: string,
+  resourceUrl: string,
+  description: string,
+  accept: Accept,
+  echoed?: { resource?: unknown; accepted?: unknown; extensions?: unknown },
+): Promise<{ v2: string; v1: string }> {
   const ethereum = ethereumProvider();
-  if (!ethereum) throw new Error("Wallet disconnected.");
+  if (!ethereum) throw new Error("No wallet in this browser. Open Find & Buy inside the wallet, the same way monaf does.");
   if (!accept.evm || (accept.scheme !== "exact" && accept.scheme !== "eip3009")) {
-    throw new Error("This accept path is not an EVM exact payment.");
+    throw new Error("This merchant is not asking for an EVM stablecoin payment.");
   }
   const chainId = Number(accept.network.split(":")[1]);
   if (!Number.isFinite(chainId)) throw new Error("Unknown chain.");
@@ -101,7 +195,20 @@ export async function signExactPayment(account: string, resourceUrl: string, des
   const nonceBytes = new Uint8Array(32);
   crypto.getRandomValues(nonceBytes);
   const nonce = `0x${[...nonceBytes].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
-  const validBefore = Math.floor(Date.now() / 1000) + Math.max(accept.timeoutSeconds, 30);
+  const accepted = (echoed?.accepted ?? {
+    scheme: "exact",
+    network: accept.network,
+    amount: accept.amount,
+    asset: accept.asset,
+    payTo: accept.payTo,
+    maxTimeoutSeconds: accept.timeoutSeconds,
+    extra: accept.extra,
+  }) as { scheme?: string; network?: string; extra?: Record<string, string>; maxTimeoutSeconds?: number };
+  const extra: Record<string, string> = { assetTransferMethod: "eip3009", ...accept.extra, ...(accepted.extra ?? {}) };
+  const now = Math.floor(Date.now() / 1000);
+  const timeout = Math.min(Math.max(accepted.maxTimeoutSeconds || accept.timeoutSeconds || 60, 30), 300);
+  const validAfter = String(now - 5);
+  const validBefore = String(now + timeout - 5);
   const typed = {
     types: {
       EIP712Domain: [
@@ -121,8 +228,8 @@ export async function signExactPayment(account: string, resourceUrl: string, des
     },
     primaryType: "TransferWithAuthorization",
     domain: {
-      name: accept.extra.name || "USD Coin",
-      version: accept.extra.version || "2",
+      name: extra.name || "USD Coin",
+      version: extra.version || "2",
       chainId,
       verifyingContract: accept.asset,
     },
@@ -130,8 +237,8 @@ export async function signExactPayment(account: string, resourceUrl: string, des
       from: account,
       to: accept.payTo,
       value: accept.amount,
-      validAfter: "0",
-      validBefore: String(validBefore),
+      validAfter,
+      validBefore,
       nonce,
     },
   };
@@ -139,30 +246,88 @@ export async function signExactPayment(account: string, resourceUrl: string, des
     method: "eth_signTypedData_v4",
     params: [account, JSON.stringify(typed)],
   })) as string;
-  const payload = {
+  if (!signature) throw new Error("The wallet did not return a signature.");
+  const packed = normalizeSignature(signature);
+  const v2 = encodePayload({
     x402Version: 2,
-    resource: { url: resourceUrl, description, mimeType: "application/json" },
-    accepted: {
-      scheme: accept.scheme,
-      network: accept.network,
-      amount: accept.amount,
-      asset: accept.asset,
-      payTo: accept.payTo,
-      maxTimeoutSeconds: accept.timeoutSeconds,
-      extra: accept.extra,
+    resource: echoed?.resource ?? { url: resourceUrl, description, mimeType: "application/json" },
+    accepted: { ...accepted, extra },
+    payload: { signature: packed, authorization: typed.message },
+    ...(echoed?.extensions ? { extensions: echoed.extensions } : {}),
+  });
+  const legacy = LEGACY_NAMES[accept.network];
+  const v1 = legacy
+    ? encodePayload({
+        x402Version: 1,
+        scheme: "exact",
+        network: legacy,
+        payload: { signature, authorization: typed.message },
+      })
+    : "";
+  return { v2, v1 };
+}
+
+export async function signExactPayment(account: string, resourceUrl: string, description: string, accept: Accept): Promise<string> {
+  return (await paymentBundle(account, resourceUrl, description, accept)).v2;
+}
+
+export async function signMandate(account: string, chainIdHex: string, rules: string): Promise<string> {
+  const ethereum = ethereumProvider();
+  if (!ethereum) throw new Error("Connect the agent wallet before signing permissions.");
+  const chainId = Number(BigInt(chainIdHex));
+  const typed = {
+    types: {
+      EIP712Domain: [
+        { name: "name", type: "string" },
+        { name: "version", type: "string" },
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" },
+      ],
+      AgentMandate: [
+        { name: "agent", type: "string" },
+        { name: "wallet", type: "address" },
+        { name: "rules", type: "string" },
+      ],
     },
-    payload: {
-      signature,
-      authorization: typed.message,
+    primaryType: "AgentMandate",
+    domain: {
+      name: "Find & Buy Agent",
+      version: "1",
+      chainId,
+      verifyingContract: "0x0000000000000000000000000000000000000000",
+    },
+    message: {
+      agent: "FindBuyAgent",
+      wallet: account,
+      rules,
     },
   };
-  const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
+  const signature = (await ethereum.request({
+    method: "eth_signTypedData_v4",
+    params: [account, JSON.stringify(typed)],
+  })) as string;
+  if (!signature) throw new Error("The wallet did not return a signature.");
+  return signature;
 }
 
 export const MONAF_URL = "https://monaf.ai/";
+
+export function walletLinks(): { name: string; href: string }[] {
+  const page =
+    typeof window !== "undefined" && window.location.protocol === "https:" && !/localhost|127\.0\.0\.1/.test(window.location.hostname)
+      ? window.location.href
+      : "https://findbuyagent.com/";
+  const bare = page.replace(/^https?:\/\//, "");
+  const origin = new URL(page).origin;
+  return [
+    { name: "MetaMask", href: `https://link.metamask.io/dapp/${bare}` },
+    { name: "Coinbase", href: `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(page)}` },
+    { name: "Phantom", href: `https://phantom.com/ul/browse/${encodeURIComponent(page)}?ref=${encodeURIComponent(origin)}` },
+    { name: "OKX", href: `https://web3.okx.com/download?deeplink=${encodeURIComponent(`okx://wallet/dapp/url?dappUrl=${encodeURIComponent(page)}`)}` },
+    { name: "Trust", href: `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(page)}` },
+    { name: "monaf", href: MONAF_URL },
+  ];
+}
 
 export const WALLET_LINKS = [
   { name: "MetaMask", href: "https://link.metamask.io/dapp/findbuyagent.com/" },

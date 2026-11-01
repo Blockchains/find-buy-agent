@@ -2,23 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppHeader, JsonLd } from "@/components/findbuy/shell";
 import { featuredListing, listings, listingsIn } from "@/content/posts";
 import type { Listing } from "@/content/posts/types";
-import { ORIGIN, homeJsonLd } from "@/content/seo";
+import { ORIGIN, BLOG_DESCRIPTION, BLOG_TITLE, pageHead } from "@/content/seo";
 
 const SERIES = ["Visa", "x402", "Autonomous buying", "Foundations"] as const;
 
 export const Route = createFileRoute("/blog/")({
-  head: () => ({
-    meta: [
-      { title: "Blog: Visa Find & Buy Agentics | FindBuyAgent.com" },
-      {
-        name: "description",
-        content:
-          "Essays on the Visa model of Find & Buy Agentics, autonomous buying, and x402 crypto payment agents. The buy stays inside a mandate. FindBuyAgent.com.",
-      },
-      { name: "robots", content: "index, follow, max-image-preview:large" },
-    ],
-    links: [{ rel: "canonical", href: `${ORIGIN}/blog` }],
-  }),
+  head: () => {
+    const head = pageHead({ title: BLOG_TITLE, description: BLOG_DESCRIPTION, path: "/blog" });
+    return {
+      meta: [...head.meta, { name: "robots", content: "index, follow, max-image-preview:large" }],
+      links: head.links,
+    };
+  },
   component: BlogIndex,
 });
 
@@ -27,7 +22,6 @@ function BlogIndex() {
   const rest = listings().filter((item) => !item.featured);
   return (
     <div className="app">
-      <JsonLd data={homeJsonLd()} />
       <JsonLd data={itemListJsonLd()} />
       <AppHeader active="blog" />
       <main className="frame">

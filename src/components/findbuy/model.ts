@@ -29,6 +29,7 @@ export type Offer = {
   lowest?: boolean;
   blocked?: boolean;
   art: "tv" | "letter";
+  ribbon?: string;
 };
 
 export type TrackStep = { label: string; detail: string };
@@ -70,10 +71,16 @@ export type Order = {
 };
 
 export type PickItem = {
+  id?: string;
   name: string;
   meta: string;
   price: string;
   rating: string;
+  detail?: string;
+  how?: string;
+  inputs?: string;
+  returns?: string;
+  docs?: string;
 };
 
 export type Phone =
@@ -97,6 +104,8 @@ export type Phone =
       sub: string;
       rows: { k: string; v: string; pill?: boolean }[];
       pending: PendingBuy;
+      links?: { name: string; href: string }[];
+      approveLabel?: string;
     }
   | { view: "track"; orderId: string }
   | { view: "digest" }

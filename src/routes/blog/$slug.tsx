@@ -2,7 +2,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PostView } from "@/components/findbuy/post-view";
 import { AppHeader, JsonLd } from "@/components/findbuy/shell";
 import { getPost } from "@/content/posts";
-import { ORIGIN } from "@/content/seo";
+import { OG_IMAGE, ORIGIN, pageHead } from "@/content/seo";
 import type { Post } from "@/content/posts/types";
 
 export const Route = createFileRoute("/blog/$slug")({
@@ -11,23 +11,30 @@ export const Route = createFileRoute("/blog/$slug")({
     if (!post) throw notFound();
     return post;
   },
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     const post = loaderData as Post | undefined;
-    if (!post) return { meta: [{ title: "Not found | FindBuyAgent.com" }] };
-    const url = `${ORIGIN}/blog/${post.slug}`;
+    if (!post) {
+      return pageHead({
+        title: "Essay not found | FindBuyAgent.com",
+        description: "That essay is not on the FindBuyAgent blog.",
+        path: `/blog/${params.slug}`,
+      });
+    }
+    const head = pageHead({
+      title: post.seoTitle,
+      description: post.description,
+      path: `/blog/${post.slug}`,
+      type: "article",
+    });
     return {
       meta: [
-        { title: post.seoTitle },
-        { name: "description", content: post.description },
+        ...head.meta,
         { name: "author", content: "FindBuyAgent" },
-        {
-          name: "robots",
-          content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
-        },
+        { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
         { property: "article:published_time", content: post.date },
         { property: "article:section", content: post.series },
       ],
-      links: [{ rel: "canonical", href: url }],
+      links: head.links,
     };
   },
   notFoundComponent: Missing,
@@ -48,7 +55,7 @@ function postJsonLd(post: Post) {
     url,
     keywords: post.keywords.join(", "),
     articleSection: post.series,
-    image: `${ORIGIN}/og.jpg`,
+    image: OG_IMAGE,
     author: { "@type": "Organization", name: "Find & Buy Agent", url: `${ORIGIN}/` },
     publisher: {
       "@type": "Organization",

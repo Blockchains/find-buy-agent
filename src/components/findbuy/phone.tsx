@@ -24,6 +24,17 @@ type Props = {
   onAskPhoto: (photo: { src: string; name: string }) => void;
   onInput: (value: string) => void;
   onReplay: () => void;
+  onPick?: (id: string) => void;
+  selectedId?: string;
+  buyLabel?: string;
+  onBuySelected?: () => void;
+  onShelf?: () => void;
+  onSearch?: (query: string) => void;
+  payNet?: string;
+  onPayNet?: (network: string) => void;
+  country?: string;
+  onCountry?: (country: string) => void;
+  countries?: readonly string[];
 };
 
 const SUGGEST: { id: string; label: string; q: string }[] = [
@@ -55,7 +66,8 @@ export function PhoneStage(props: Props) {
         <div className="phone-body">
           <PhoneBody {...props} />
         </div>
-        {state.phase === "live" ? (
+        {state.booted && state.phase !== "cinema" && state.phone.view !== "ask" && state.phone.view !== "scan" && state.phone.view !== "found" && state.phone.view !== "picks" ? (
+          <div className="dock">
           <AskDock
             state={state}
             onAskText={props.onAskText}
@@ -63,7 +75,16 @@ export function PhoneStage(props: Props) {
             onAskPhoto={props.onAskPhoto}
             onInput={props.onInput}
             onReplay={props.onReplay}
+            country={props.country}
+            onCountry={props.onCountry}
+            countries={props.countries}
           />
+          </div>
+        ) : null}
+        {state.phone.view === "picks" && props.buyLabel ? (
+          <button type="button" className="buy-bar" onClick={props.onBuySelected}>
+            {props.buyLabel}
+          </button>
         ) : null}
         <div className="home-ind" aria-hidden />
       </div>
@@ -71,7 +92,8 @@ export function PhoneStage(props: Props) {
   );
 }
 
-function PhoneBody({ state, onApprove, onDecline, onBuy, onAskAgain, onWeek }: Props) {
+function PhoneBody({ state, onApprove, onDecline, onBuy, onAskAgain, onWeek, onPick, country, onCountry, countries, selectedId, onShelf, onSearch, payNet, onPayNet }: Props) {
+  const [draft, setDraft] = useState("");
   const phone = state.phone;
   switch (phone.view) {
     case "blank":
@@ -112,12 +134,21 @@ function PhoneBody({ state, onApprove, onDecline, onBuy, onAskAgain, onWeek }: P
           <p className="ask-price">{phone.priceLine}</p>
           <p className="quiet">{phone.sub}</p>
           <Sheet rows={phone.rows} />
+          {phone.links?.length ? (
+            <div className="wallets">
+              {phone.links.map((link) => (
+                <a key={link.name} href={link.href} target="_blank" rel="noreferrer">
+                  {link.name}
+                </a>
+              ))}
+            </div>
+          ) : null}
           <div className="ask-actions">
             <button type="button" className="btn btn-ghost press" onClick={onDecline}>
               Not now
             </button>
             <button type="button" className="btn btn-mint press is-glow" onClick={onApprove}>
-              Approve
+              {phone.approveLabel ?? "Approve"}
             </button>
           </div>
         </div>
@@ -157,42 +188,101 @@ function PhoneBody({ state, onApprove, onDecline, onBuy, onAskAgain, onWeek }: P
           </button>
         </div>
       );
-    case "picks":
+    case "picks": {
+      const nets = ["All", "Base", "Polygon", "Arbitrum", "Ethereum", "Optimism", "BNB Chain", "Avalanche"];
+      const visible = !payNet || payNet === "All" ? phone.items : phone.items.filter((item) => item.meta.includes(payNet));
       return (
-        <div className="rise">
-          <p className="kicker">{phone.kicker}</p>
-          <h2 className="digest-title">{phone.title}</h2>
-          <p className="quiet">{phone.sub}</p>
-          <ul className="ogrid">
-            {phone.items.map((item) => (
-              <li key={item.name} className="pcard">
-                <div className="mono-mark" aria-hidden>
-                  {item.name.slice(0, 1)}
-                </div>
-                <p className="pname">{item.name}</p>
-                <p className="pstore">{item.meta}</p>
-                <p className="prow">
-                  <span className="rate">
-                    <Star size={12} className="star" aria-hidden /> {item.rating}
+        <div className="shop-list">
+          <form
+            className="shop-search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              onSearch?.(draft.trim());
+            }}
+          >
+            <label className="sr" htmlFor="shop-q">
+              Search products
+            </label>
+            <input
+              id="shop-q"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder="Search products"
+              enterKeyHint="search"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <button type="submit">Search</button>
+          </form>
+          <label className="country-row">
+            <span>Deliver</span>
+            <select id="deliver-country" value={country || ""} onChange={(event) => onCountry?.(event.target.value)} aria-label="Delivery country">
+              <option value="">Choose a country</option>
+              {(countries ?? []).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="net-row" role="tablist" aria-label="Network">
+            {nets.map((name) => (
+              <button key={name} type="button" className={payNet === name ? "is-on" : ""} onClick={() => onPayNet?.(name)}>
+                {name}
+              </button>
+            ))}
+          </div>
+          <p className="fine">{phone.sub}</p>
+          <ul className="shelf">
+            {visible.map((item) => (
+              <li key={item.id || item.name}>
+                <button
+                  type="button"
+                  className={selectedId === (item.id || item.name) ? "shelf-row is-on" : "shelf-row"}
+                  onClick={() => onPick?.(item.id || item.name)}
+                >
+                  <span className="mono-mark" aria-hidden>
+                    {item.name.slice(0, 1)}
                   </span>
-                  <span className="pprice">{item.price}</span>
-                </p>
+                  <span className="shelf-copy">
+                    <strong>{item.name}</strong>
+                    <em>{item.meta}</em>
+                  </span>
+                  <b>{item.price}</b>
+                </button>
+                {selectedId === (item.id || item.name) ? (
+                  <div className="use-card">
+                    <p>{item.detail || "No description was filed. Paying the price returns whatever this URL serves."}</p>
+                    {item.how ? <code>{item.how}</code> : null}
+                    {item.inputs ? (
+                      <>
+                        <span>Send</span>
+                        <pre>{item.inputs}</pre>
+                      </>
+                    ) : (
+                      <span>No extra fields. A paid GET of that URL is the whole call.</span>
+                    )}
+                    {item.returns ? (
+                      <>
+                        <span>You get</span>
+                        <pre>{item.returns}</pre>
+                      </>
+                    ) : null}
+                    {item.docs ? (
+                      <a href={item.docs} target="_blank" rel="noreferrer">
+                        Docs
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>
-          {phone.pending ? (
-            <>
-              <button type="button" className="btn btn-mint press buy" onClick={onBuy}>
-                Buy the top one
-              </button>
-              <p className="fine">I'll ask before anything is charged.</p>
-            </>
-          ) : null}
-          <button type="button" className="linkish" onClick={onWeek}>
-            This week
-          </button>
+          {visible.length === 0 ? <p className="quiet">Nothing on {payNet}. Try another chain.</p> : null}
         </div>
       );
+    }
     case "note":
       return (
         <div className="rise">
@@ -200,9 +290,15 @@ function PhoneBody({ state, onApprove, onDecline, onBuy, onAskAgain, onWeek }: P
           <h2 className="digest-title">{phone.title}</h2>
           <p className="quiet">{phone.sub}</p>
           {phone.rows.length > 0 ? <Sheet rows={phone.rows} /> : null}
-          <button type="button" className="linkish" onClick={onWeek}>
-            This week
-          </button>
+          {onShelf ? (
+            <button type="button" className="btn btn-mint press buy note-back" onClick={onShelf}>
+              Choose another
+            </button>
+          ) : (
+            <button type="button" className="linkish" onClick={onWeek}>
+              This week
+            </button>
+          )}
         </div>
       );
     default:
@@ -274,15 +370,17 @@ function OfferGrid({ offers, highlight }: { offers: Offer[]; highlight: boolean 
           key={offer.id}
           className={`pcard rise${highlight && offer.lowest ? " is-lowest" : ""}${offer.blocked ? " is-blocked" : ""}`}
         >
-          {highlight && offer.lowest ? <span className="ribbon">Lowest · same model</span> : null}
+          {highlight && offer.lowest ? <span className="ribbon">{offer.ribbon ?? "Lowest · same model"}</span> : null}
           <div className="pmedia">{offer.art === "tv" ? <TvMark muted={!!offer.blocked} /> : <span className="mono-mark">{offer.store.slice(0, 1)}</span>}</div>
           <p className="pstore">{offer.store}</p>
           <p className="pname">{offer.name}</p>
           <p className="prow">
-            {offer.blocked || offer.rating == null ? (
+            {offer.blocked ? (
               <span className="blocked">
                 <Lock size={11} aria-hidden /> blocked
               </span>
+            ) : offer.rating == null ? (
+              <span className="rate">x402</span>
             ) : (
               <span className="rate">
                 <Star size={12} className="star" aria-hidden /> {offer.rating.toFixed(1)}
@@ -336,7 +434,10 @@ function AskDock({
   onAskPhoto,
   onInput,
   onReplay,
-}: Pick<Props, "state" | "onAskText" | "onAskLink" | "onAskPhoto" | "onInput" | "onReplay">) {
+  country,
+  onCountry,
+  countries,
+}: Pick<Props, "state" | "onAskText" | "onAskLink" | "onAskPhoto" | "onInput" | "onReplay" | "country" | "onCountry" | "countries">) {
   const [mode, setMode] = useState<"type" | "link" | "photo">("type");
   const [link, setLink] = useState("");
   const [linkError, setLinkError] = useState("");
@@ -344,7 +445,19 @@ function AskDock({
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
-    <form
+    <>
+      <label className="country-row">
+        <span>Deliver</span>
+        <select id="deliver-country" value={country || ""} onChange={(event) => onCountry?.(event.target.value)} aria-label="Delivery country">
+          <option value="">Choose a country</option>
+          {(countries ?? []).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <form
       className="ask"
       onSubmit={(event) => {
         event.preventDefault();
@@ -481,6 +594,7 @@ function AskDock({
         </div>
       ) : null}
     </form>
+    </>
   );
 }
 

@@ -14,6 +14,14 @@ export type Accept = {
   extra: Record<string, string>;
 };
 
+export type Usage = {
+  method: string;
+  call: string;
+  inputs: string;
+  returns: string;
+  docs: string;
+};
+
 export type Offer = {
   id: string;
   source: SourceId;
@@ -23,7 +31,10 @@ export type Offer = {
   url: string;
   tags: string[];
   updated: string;
+  payers: number;
+  calls: number;
   accepts: Accept[];
+  usage: Usage;
 };
 
 export type SourcePage = {
@@ -60,6 +71,8 @@ const NETWORKS: Record<string, string> = {
   "eip155:42161": "Arbitrum",
   "eip155:10": "Optimism",
   "eip155:56": "BNB Chain",
+  "eip155:43114": "Avalanche",
+  "eip155:480": "World Chain",
   "solana:5eykt4usfv8p8njdtrepy1vzqkqzkvdp": "Solana",
 };
 
@@ -78,7 +91,12 @@ export function sourceLabel(id: SourceId): string {
 }
 
 function networkLabel(network: string): string {
-  return NETWORKS[network.toLowerCase()] ?? network;
+  const key = network.toLowerCase();
+  const known = Object.entries(NETWORKS).find(([name]) => name.toLowerCase() === key);
+  if (known) return known[1];
+  if (key.startsWith("solana:")) return "Solana";
+  if (key.startsWith("eip155:")) return `Chain ${network.slice(7)}`;
+  return network.split(":")[0] || network;
 }
 
 function priceLabel(amount: string, assetName: string, asset: string): string {
@@ -109,7 +127,7 @@ function normalizeAccept(raw: unknown): Accept | null {
   const asset = str(row.asset);
   const amount = str(row.amount) || str(row.maxAmountRequired);
   const payTo = str(row.payTo);
-  const network = str(row.network);
+  const network = canonicalNetwork(str(row.network));
   if (!asset || !amount || !payTo || !network) return null;
   const extraRaw = asRecord(row.extra) ?? {};
   const extra: Record<string, string> = {};
@@ -132,6 +150,60 @@ function normalizeAccept(raw: unknown): Accept | null {
   };
 }
 
+const LEGACY_NETWORKS: Record<string, string> = {
+  base: "eip155:8453",
+  "base-sepolia": "eip155:84532",
+  ethereum: "eip155:1",
+  mainnet: "eip155:1",
+  polygon: "eip155:137",
+  arbitrum: "eip155:42161",
+  optimism: "eip155:10",
+  avalanche: "eip155:43114",
+  bsc: "eip155:56",
+};
+
+function canonicalNetwork(value: string): string {
+  return LEGACY_NETWORKS[value.toLowerCase()] ?? value;
+}
+
+export function challengeAccepts(header: string, body: string): Accept[] {
+  const found: Accept[] = [];
+  const seen = new Set<string>();
+  for (const text of [header, body]) {
+    if (!text) continue;
+    try {
+      const parsed = JSON.parse(text) as { accepts?: unknown };
+      if (!Array.isArray(parsed.accepts)) continue;
+      for (const raw of parsed.accepts) {
+        const accept = normalizeAccept(raw);
+        if (!accept) continue;
+        const key = `${accept.network}:${accept.asset}:${accept.amount}:${accept.payTo}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        found.push(accept);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return found;
+}
+
+export const ENABLED_NETWORKS = ["eip155:8453", "eip155:137", "eip155:42161", "eip155:1", "eip155:10", "eip155:56", "eip155:43114"] as const;
+
+export function payableAccepts(accepts: Accept[]): Accept[] {
+  const enabled = new Set<string>(ENABLED_NETWORKS);
+  return accepts.filter((accept) => accept.evm && (accept.scheme === "exact" || accept.scheme === "eip3009") && enabled.has(accept.network));
+}
+
+export function pickPayable(accepts: Accept[], prefer?: string): Accept | null {
+  const ready = payableAccepts(accepts);
+  if (prefer && prefer !== "All") {
+    return ready.find((accept) => accept.networkLabel === prefer) ?? null;
+  }
+  return ready.find((accept) => accept.network === "eip155:8453") ?? ready[0] ?? null;
+}
+
 function normalizeItem(source: SourceId, raw: unknown): Offer | null {
   const row = asRecord(raw);
   if (!row) return null;
@@ -142,16 +214,87 @@ function normalizeItem(source: SourceId, raw: unknown): Offer | null {
   if (accepts.length === 0) return null;
   const tags = Array.isArray(row.tags) ? row.tags.filter((tag): tag is string => typeof tag === "string") : [];
   const name = str(row.serviceName) || str(row.name) || hostOf(url);
+  const quality = asRecord(row.quality);
+  const meta = asRecord(row.metadata);
+  const description = str(row.description) || str(meta?.description) || str(asRecord(meta?.provider)?.description);
   return {
     id: `${source}:${url}`,
     source,
     sourceLabel: SOURCES[source].label,
     name,
-    description: str(row.description),
+    description,
     url,
     tags: tags.slice(0, 6),
     updated: str(row.lastUpdated),
+    payers: Number(quality?.l30DaysUniquePayers) || 0,
+    calls: Number(quality?.l30DaysTotalCalls) || 0,
     accepts,
+    usage: readUsage(row, url, meta),
+  };
+}
+
+function shown(value: unknown): string {
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value).slice(0, 80);
+  } catch {
+    return "";
+  }
+}
+
+function readUsage(row: Record<string, unknown>, url: string, meta: Record<string, unknown> | null): Usage {
+  const info = asRecord(asRecord(asRecord(row.extensions)?.bazaar)?.info);
+  const input = asRecord(info?.input) ?? asRecord(meta?.input);
+  const method = (str(input?.method) || str(meta?.method) || "GET").toUpperCase();
+  const query = asRecord(input?.queryParams) ?? asRecord(input?.query);
+  const pathParams = asRecord(input?.pathParams);
+  const body = asRecord(input?.body);
+  const lines: string[] = [];
+  if (query) {
+    for (const [key, value] of Object.entries(query)) lines.push(`${key} = ${shown(value)}   query`);
+  }
+  if (pathParams) {
+    for (const [key, value] of Object.entries(pathParams)) lines.push(`${key} = ${shown(value)}   path`);
+  }
+  const props = asRecord(body?.properties);
+  if (props) {
+    for (const [key, value] of Object.entries(props)) {
+      const spec = asRecord(value);
+      const note = str(spec?.description) || str(spec?.type);
+      lines.push(note ? `${key}: ${note}   body` : `${key}   body`);
+    }
+  }
+  let call = url;
+  try {
+    const parsed = new URL(url);
+    if (pathParams) {
+      for (const [key, value] of Object.entries(pathParams)) {
+        if (typeof value === "string" || typeof value === "number") {
+          parsed.pathname = parsed.pathname.replaceAll(`{${key}}`, encodeURIComponent(String(value)));
+        }
+      }
+    }
+    if (query) {
+      for (const [key, value] of Object.entries(query)) {
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+          parsed.searchParams.set(key, String(value));
+        }
+      }
+    }
+    call = parsed.toString();
+  } catch {
+    call = url;
+  }
+  const output = asRecord(info?.output) ?? asRecord(meta?.output);
+  const example = output?.example;
+  const returns = example ? JSON.stringify(example).slice(0, 320) : "";
+  const docs = str(meta?.docsUrl) || str(asRecord(meta?.provider)?.docsUrl);
+  return {
+    method,
+    call: `${method} ${call}`.slice(0, 360),
+    inputs: lines.slice(0, 14).join("\n").slice(0, 640),
+    returns,
+    docs,
   };
 }
 
@@ -186,7 +329,8 @@ function listUrl(source: SourceId, limit: number, offset: number, query: string)
   const q = query.trim();
   if (source === "coinbase") {
     if (q) {
-      return `https://api.cdp.coinbase.com/platform/v2/x402/discovery/search?query=${encodeURIComponent(q)}&limit=${limit}`;
+      const searchLimit = Math.min(limit, 25);
+      return `https://api.cdp.coinbase.com/platform/v2/x402/discovery/search?query=${encodeURIComponent(q)}&limit=${searchLimit}`;
     }
     return `https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources?limit=${limit}&offset=${offset}`;
   }

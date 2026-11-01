@@ -18,10 +18,10 @@ export const probeOffer = createServerFn({ method: "POST" })
   });
 
 export const relayPayment = createServerFn({ method: "POST" })
-  .inputValidator((input: { url: string; paymentSignature: string }) => input)
+  .inputValidator((input: { url: string; paymentSignature: string; legacyPayment?: string }) => input)
   .handler(async ({ data }) => {
     const { relaySignedGet } = await import("./catalog.server");
-    return relaySignedGet(data.url, data.paymentSignature);
+    return relaySignedGet(data.url, data.paymentSignature, data.legacyPayment ?? "");
   });
 
 export const readBalances = createServerFn({ method: "POST" })

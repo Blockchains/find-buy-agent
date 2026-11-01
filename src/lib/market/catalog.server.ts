@@ -1,8 +1,8 @@
-import { assertPublicHttps, loadMarket } from "./catalog";
+import { assertPublicHttps, challengeAccepts, loadMarket, type Accept } from "./catalog";
 
 export { loadMarket };
 
-export async function probeResource(rawUrl: string): Promise<{ status: number; paymentRequired: string; snippet: string }> {
+export async function probeResource(rawUrl: string): Promise<{ status: number; paymentRequired: string; accepts: Accept[]; snippet: string }> {
   const url = assertPublicHttps(rawUrl);
   const response = await fetch(url, {
     method: "GET",
@@ -11,28 +11,32 @@ export async function probeResource(rawUrl: string): Promise<{ status: number; p
     headers: { accept: "application/json, text/plain, */*" },
   });
   const paymentRequired = response.headers.get("payment-required");
+  const decoded = paymentRequired ? decodeHeader(paymentRequired) : "";
+  const body = await response.text();
   return {
     status: response.status,
-    paymentRequired: paymentRequired ? decodeHeader(paymentRequired) : "",
-    snippet: (await response.text()).slice(0, 2_000),
+    paymentRequired: decoded,
+    accepts: challengeAccepts(decoded, body),
+    snippet: body.slice(0, 2_000),
   };
 }
 
 export async function relaySignedGet(
   rawUrl: string,
   paymentSignature: string,
+  _legacyPayment = "",
 ): Promise<{ status: number; paymentResponse: string; snippet: string }> {
   const url = assertPublicHttps(rawUrl);
   if (!paymentSignature || paymentSignature.length > 20_000) throw new Error("Missing payment signature.");
+  const headers: Record<string, string> = {
+    accept: "application/json, text/plain, */*",
+    "payment-signature": paymentSignature,
+  };
   const response = await fetch(url, {
     method: "GET",
     redirect: "follow",
     signal: AbortSignal.timeout(15_000),
-    headers: {
-      accept: "application/json, text/plain, */*",
-      "payment-signature": paymentSignature,
-      "x-payment": paymentSignature,
-    },
+    headers,
   });
   return {
     status: response.status,
