@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { listMarket, probeOffer, readBalances, relayPayment } from "@/lib/market/api";
 import { pickPayable, type Accept, type Offer, type SourcePage } from "@/lib/market/catalog";
 import { challengeEcho, connectWallet, paymentBundle, walletLinks, type ConnectedWallet } from "@/lib/market/wallet";
+import { ApprovalSheet } from "@/components/mandate/approval-sheet";
+import { activeMandate, type Evaluation } from "@/lib/mandate";
+import { extractTxHash, recordSettled } from "@/lib/receipts";
+import { SpendBlocked, SpendNeedsApproval, approveSpend, assertPaymentSignatureAllowed, toSpendOffer } from "@/lib/spend";
 
 type PayState = { status: string; detail: string };
 
@@ -16,6 +20,7 @@ export function Market({ seed = "" }: { seed?: string }) {
   const [balances, setBalances] = useState<{ baseUsdc: string; monad: string } | null>(null);
   const [pay, setPay] = useState<PayState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<{ offer: Offer; accept: Accept; verdict: Evaluation } | null>(null);
 
   useEffect(() => {
     if (!seed) return;
@@ -68,10 +73,6 @@ export function Market({ seed = "" }: { seed?: string }) {
   };
 
   const approve = async (offer: Offer, accept: Accept) => {
-    if (!wallet) {
-      setPay({ status: "Approve", detail: "Connect the wallet first. Nothing is signed until you do." });
-      return;
-    }
     setBusy(true);
     setPay({ status: "Checking the merchant", detail: offer.url });
     try {
@@ -84,10 +85,33 @@ export function Market({ seed = "" }: { seed?: string }) {
         });
         return;
       }
+      const spend = toSpendOffer(offer, live);
+      let verdict: Evaluation;
+      try {
+        verdict = assertPaymentSignatureAllowed(spend);
+      } catch (error) {
+        if (error instanceof SpendNeedsApproval) {
+          setPending({ offer, accept: live, verdict: error.verdict });
+          return;
+        }
+        if (error instanceof SpendBlocked) {
+          setPay({ status: "Blocked", detail: error.message });
+          return;
+        }
+        throw error;
+      }
+      if (!wallet) {
+        setPay({ status: "Approve", detail: "Connect the wallet first. Nothing is signed until you do." });
+        return;
+      }
       setPay({ status: "Sign in your wallet", detail: `${live.priceLabel} to ${short(live.payTo)} on ${live.networkLabel}` });
       const payment = await paymentBundle(wallet.address, offer.url, offer.description, live, challengeEcho(probe.paymentRequired, live));
       setPay({ status: "Settling", detail: "The signed authorization is going back to the merchant. Your key never left the wallet." });
       const settled = await relayPayment({ data: { url: offer.url, paymentSignature: payment.v2, legacyPayment: payment.v1 } });
+      const txHash = extractTxHash(settled.paymentResponse, settled.snippet);
+      if (txHash && live.network.endsWith(":8453")) {
+        recordSettled({ mandate: activeMandate(), offer: spend, evaluation: verdict, signature: payment.signature, nonce: payment.nonce, txHash });
+      }
       setPay({
         status: settled.status >= 200 && settled.status < 300 ? "Paid" : `Merchant answered ${settled.status}`,
         detail: settled.snippet.slice(0, 360) || "No body.",
@@ -187,6 +211,24 @@ export function Market({ seed = "" }: { seed?: string }) {
             <p className="quiet">Ask first. The wallet signs the exact amount on the listing. Decline by doing nothing.</p>
           )}
         </article>
+      ) : null}
+      {pending ? (
+        <ApprovalSheet
+          mandate={activeMandate()}
+          offer={toSpendOffer(pending.offer, pending.accept)}
+          verdict={pending.verdict}
+          onApprove={() => {
+            const next = pending;
+            approveSpend(toSpendOffer(next.offer, next.accept));
+            setPending(null);
+            void approve(next.offer, next.accept);
+          }}
+          onDecline={() => {
+            setPending(null);
+            setPay({ status: "Declined", detail: "Declined. Nothing was signed." });
+          }}
+          onClose={() => setPending(null)}
+        />
       ) : null}
     </section>
   );

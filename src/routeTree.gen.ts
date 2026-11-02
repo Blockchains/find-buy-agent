@@ -10,6 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompareRouteImport } from './routes/compare'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as MandatesRouteImport } from './routes/mandates'
+import { Route as MerchantsRouteImport } from './routes/merchants'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ProtocolsRouteImport } from './routes/protocols'
+import { Route as ReceiptsRouteImport } from './routes/receipts'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as BlogFindAndBuyAgentsRouteImport } from './routes/blog/find-and-buy-agents'
@@ -17,6 +25,46 @@ import { Route as BlogFindAndBuyAgentsRouteImport } from './routes/blog/find-and
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MandatesRoute = MandatesRouteImport.update({
+  id: '/mandates',
+  path: '/mandates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MerchantsRoute = MerchantsRouteImport.update({
+  id: '/merchants',
+  path: '/merchants',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocolsRoute = ProtocolsRouteImport.update({
+  id: '/protocols',
+  path: '/protocols',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReceiptsRoute = ReceiptsRouteImport.update({
+  id: '/receipts',
+  path: '/receipts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
@@ -37,12 +85,28 @@ const BlogFindAndBuyAgentsRoute = BlogFindAndBuyAgentsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/compare': typeof CompareRoute
+  '/faq': typeof FaqRoute
+  '/mandates': typeof MandatesRoute
+  '/merchants': typeof MerchantsRoute
+  '/pricing': typeof PricingRoute
+  '/protocols': typeof ProtocolsRoute
+  '/receipts': typeof ReceiptsRoute
+  '/security': typeof SecurityRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compare': typeof CompareRoute
+  '/faq': typeof FaqRoute
+  '/mandates': typeof MandatesRoute
+  '/merchants': typeof MerchantsRoute
+  '/pricing': typeof PricingRoute
+  '/protocols': typeof ProtocolsRoute
+  '/receipts': typeof ReceiptsRoute
+  '/security': typeof SecurityRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog': typeof BlogIndexRoute
@@ -50,20 +114,73 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/compare': typeof CompareRoute
+  '/faq': typeof FaqRoute
+  '/mandates': typeof MandatesRoute
+  '/merchants': typeof MerchantsRoute
+  '/pricing': typeof PricingRoute
+  '/protocols': typeof ProtocolsRoute
+  '/receipts': typeof ReceiptsRoute
+  '/security': typeof SecurityRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blog/$slug' | '/blog/find-and-buy-agents' | '/blog/'
+  fullPaths:
+    | '/'
+    | '/compare'
+    | '/faq'
+    | '/mandates'
+    | '/merchants'
+    | '/pricing'
+    | '/protocols'
+    | '/receipts'
+    | '/security'
+    | '/blog/$slug'
+    | '/blog/find-and-buy-agents'
+    | '/blog/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blog/$slug' | '/blog/find-and-buy-agents' | '/blog'
-  id: '__root__' | '/' | '/blog/$slug' | '/blog/find-and-buy-agents' | '/blog/'
+  to:
+    | '/'
+    | '/compare'
+    | '/faq'
+    | '/mandates'
+    | '/merchants'
+    | '/pricing'
+    | '/protocols'
+    | '/receipts'
+    | '/security'
+    | '/blog/$slug'
+    | '/blog/find-and-buy-agents'
+    | '/blog'
+  id:
+    | '__root__'
+    | '/'
+    | '/compare'
+    | '/faq'
+    | '/mandates'
+    | '/merchants'
+    | '/pricing'
+    | '/protocols'
+    | '/receipts'
+    | '/security'
+    | '/blog/$slug'
+    | '/blog/find-and-buy-agents'
+    | '/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CompareRoute: typeof CompareRoute
+  FaqRoute: typeof FaqRoute
+  MandatesRoute: typeof MandatesRoute
+  MerchantsRoute: typeof MerchantsRoute
+  PricingRoute: typeof PricingRoute
+  ProtocolsRoute: typeof ProtocolsRoute
+  ReceiptsRoute: typeof ReceiptsRoute
+  SecurityRoute: typeof SecurityRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogFindAndBuyAgentsRoute: typeof BlogFindAndBuyAgentsRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -76,6 +193,62 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mandates': {
+      id: '/mandates'
+      path: '/mandates'
+      fullPath: '/mandates'
+      preLoaderRoute: typeof MandatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/merchants': {
+      id: '/merchants'
+      path: '/merchants'
+      fullPath: '/merchants'
+      preLoaderRoute: typeof MerchantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocols': {
+      id: '/protocols'
+      path: '/protocols'
+      fullPath: '/protocols'
+      preLoaderRoute: typeof ProtocolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/receipts': {
+      id: '/receipts'
+      path: '/receipts'
+      fullPath: '/receipts'
+      preLoaderRoute: typeof ReceiptsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/': {
@@ -104,6 +277,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CompareRoute: CompareRoute,
+  FaqRoute: FaqRoute,
+  MandatesRoute: MandatesRoute,
+  MerchantsRoute: MerchantsRoute,
+  PricingRoute: PricingRoute,
+  ProtocolsRoute: ProtocolsRoute,
+  ReceiptsRoute: ReceiptsRoute,
+  SecurityRoute: SecurityRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogFindAndBuyAgentsRoute: BlogFindAndBuyAgentsRoute,
   BlogIndexRoute: BlogIndexRoute,

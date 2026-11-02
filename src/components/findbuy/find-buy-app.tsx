@@ -11,10 +11,15 @@ import { listMarket, probeOffer, relayPayment } from "@/lib/market/api";
 import { COUNTRIES, deliveryLine, digestOf, loadAgent, rankOffers, saveAgent, spentToday, type Fulfillment } from "@/lib/market/agent";
 import { pickPayable, payableAccepts, type Accept, type Offer } from "@/lib/market/catalog";
 import { challengeEcho, connectWallet, paymentBundle, signMandate, walletLinks } from "@/lib/market/wallet";
+import { ApprovalSheet } from "@/components/mandate/approval-sheet";
+import { activeMandate } from "@/lib/mandate";
+import { extractTxHash, recordSettled } from "@/lib/receipts";
+import { SpendBlocked, SpendNeedsApproval, approveSpend, assertPaymentSignatureAllowed, toSpendOffer } from "@/lib/spend";
+import type { Evaluation } from "@/lib/mandate";
 
 type Deal = { offer: Offer; accept: Accept; challenged: boolean };
 
-export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
+export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialTab?: Tab; embedded?: boolean }) {
   const demo = useDemo(initialTab);
   const navigate = useNavigate();
   const { state } = demo;
@@ -25,6 +30,7 @@ export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
   const [country, setCountry] = useState("");
   const [selectedId, setSelectedId] = useState("");
   const [payNet, setPayNet] = useState("All");
+  const [pending, setPending] = useState<{ offer: Offer; accept: Accept; verdict: Evaluation } | null>(null);
 
   useEffect(() => {
     setCountry(loadAgent().delivery.country);
@@ -227,6 +233,26 @@ export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
         demo.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, live, `This would pass the $${stored.rules.dailyUsd} daily cap. Nothing was signed.`) });
         return;
       }
+      const spend = toSpendOffer(offer, live);
+      let verdict: Evaluation;
+      try {
+        verdict = assertPaymentSignatureAllowed(spend);
+      } catch (error) {
+        if (error instanceof SpendNeedsApproval) {
+          setPending({ offer, accept: live, verdict: error.verdict });
+          return;
+        }
+        if (error instanceof SpendBlocked) {
+          demo.focus({
+            phase: "ask",
+            pill: "needs you",
+            pillTone: "fill",
+            phone: sheet(offer, live, error.message),
+          });
+          return;
+        }
+        throw error;
+      }
       demo.focus({
         pill: "paying",
         pillTone: "line",
@@ -258,6 +284,10 @@ export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
       });
       const signed = await paymentBundle(wallet.address, offer.url, offer.description, live, challengeEcho(probe.paymentRequired, live));
       const settled = await relayPayment({ data: { url: offer.url, paymentSignature: signed.v2, legacyPayment: signed.v1 } });
+      const txHash = extractTxHash(settled.paymentResponse, settled.snippet);
+      if (txHash && live.network.endsWith(":8453")) {
+        recordSettled({ mandate: activeMandate(), offer: spend, evaluation: verdict, signature: signed.signature, nonce: signed.nonce, txHash });
+      }
       const ok = settled.status >= 200 && settled.status < 300;
       const order: Fulfillment = {
         id: `${Date.now()}`,
@@ -425,14 +455,16 @@ export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
   const chainLabel = payNet === "All" ? pickPayable(selected?.accepts ?? [])?.networkLabel ?? "Base" : payNet;
   const buyLabel = !selected ? "" : !country ? "Choose a country" : selectedPrice ? `Buy on ${chainLabel} · ${selectedPrice} · ${country}` : `Not on ${payNet}`;
 
+  const Frame = embedded ? "div" : "main";
+
   return (
-    <div className="app">
-      <h1 className="sr">Find & Buy Agent</h1>
+    <div className={embedded ? "app embedded" : "app"}>
+      {embedded ? null : <h1 className="sr">Find & Buy Agent</h1>}
       <p className="sr" aria-live="polite">
         {live}
       </p>
       <AppHeader active={state.tab} onTab={choose} />
-      <main className="frame">
+      <Frame className="frame">
         <div className="cmdbar">
           <div className="cmd">
             <span className="prompt">~/agent</span>
@@ -551,7 +583,30 @@ export function FindBuyApp({ initialTab = "shop" }: { initialTab?: Tab }) {
             <Orders state={state} />
           </>
         ) : null}
-      </main>
+      </Frame>
+      {pending ? (
+        <ApprovalSheet
+          mandate={activeMandate()}
+          offer={toSpendOffer(pending.offer, pending.accept)}
+          verdict={pending.verdict}
+          onApprove={() => {
+            const next = pending;
+            approveSpend(toSpendOffer(next.offer, next.accept));
+            setPending(null);
+            void buyOffer(next.offer, next.accept);
+          }}
+          onDecline={() => {
+            setPending(null);
+            demo.focus({
+              phase: "ask",
+              pill: "held",
+              pillTone: "ghost",
+              phone: sheet(pending.offer, pending.accept, "Declined. Nothing was signed."),
+            });
+          }}
+          onClose={() => setPending(null)}
+        />
+      ) : null}
     </div>
   );
 }

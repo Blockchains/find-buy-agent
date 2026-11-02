@@ -97,7 +97,7 @@ export function siteJsonLd() {
         "@type": "SoftwareApplication",
         "@id": `${ORIGIN}/#app`,
         name: "Find & Buy Agent",
-        applicationCategory: "ShoppingApplication",
+        applicationCategory: "FinanceApplication",
         operatingSystem: "Web",
         url: `${ORIGIN}/`,
         description: HOME_DESCRIPTION,

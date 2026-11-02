@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AppHeader, JsonLd } from "@/components/findbuy/shell";
+import { JsonLd } from "@/components/findbuy/shell";
+import { SiteShell } from "@/components/shell/site-shell";
 import { featuredListing, listings, listingsIn } from "@/content/posts";
 import type { Listing } from "@/content/posts/types";
 import { ORIGIN, BLOG_DESCRIPTION, BLOG_TITLE, pageHead } from "@/content/seo";
@@ -21,11 +22,9 @@ function BlogIndex() {
   const lead = featuredListing();
   const rest = listings().filter((item) => !item.featured);
   return (
-    <div className="app">
+    <SiteShell>
       <JsonLd data={itemListJsonLd()} />
-      <AppHeader active="blog" />
-      <main className="frame">
-        <section className="essay blog-index">
+      <section className="essay blog-index">
           <p className="kicker">FindBuyAgent.com</p>
           <h1>The Visa model, and the buys around it</h1>
           <p className="lede">
@@ -58,8 +57,7 @@ function BlogIndex() {
             );
           })}
         </section>
-      </main>
-    </div>
+    </SiteShell>
   );
 }
 

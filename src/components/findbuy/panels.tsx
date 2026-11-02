@@ -12,7 +12,7 @@ export function Vault({ state }: { state: State }) {
         </div>
         <p className="vault-num">···· ···· ···· 2210</p>
         <div className="vault-foot">
-          <span>@0xjmori</span>
+          <span>Not connected</span>
           <span>ask first</span>
         </div>
       </div>

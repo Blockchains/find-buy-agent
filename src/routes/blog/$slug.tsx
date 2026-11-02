@@ -1,6 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { PostView } from "@/components/findbuy/post-view";
-import { AppHeader, JsonLd } from "@/components/findbuy/shell";
+import { JsonLd } from "@/components/findbuy/shell";
+import { SiteShell } from "@/components/shell/site-shell";
 import { getPost } from "@/content/posts";
 import { OG_IMAGE, ORIGIN, pageHead } from "@/content/seo";
 import type { Post } from "@/content/posts/types";
@@ -69,28 +70,22 @@ function postJsonLd(post: Post) {
 function PostPage() {
   const post = Route.useLoaderData();
   return (
-    <div className="app">
+    <SiteShell>
       <JsonLd data={postJsonLd(post)} />
-      <AppHeader active="blog" />
-      <main className="frame">
-        <PostView post={post} />
-      </main>
-    </div>
+      <PostView post={post} />
+    </SiteShell>
   );
 }
 
 function Missing() {
   return (
-    <div className="app">
-      <AppHeader active="blog" />
-      <main className="frame">
-        <article className="essay">
-          <h1>That essay is not on the blog.</h1>
-          <p>
-            <a href="/blog">Back to the blog</a>
-          </p>
-        </article>
-      </main>
-    </div>
+    <SiteShell>
+      <article className="essay">
+        <h1>That essay is not on the blog.</h1>
+        <p>
+          <a href="/blog">Back to the blog</a>
+        </p>
+      </article>
+    </SiteShell>
   );
 }

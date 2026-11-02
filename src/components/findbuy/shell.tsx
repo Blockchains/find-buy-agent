@@ -26,9 +26,7 @@ export function AppHeader({
           </Link>
         </nav>
         <div className="who">
-          <span className="dot dot-mint" aria-hidden />
-          <span className="who-status">connected</span>
-          <span className="handle">@0xjmori</span>
+          <span className="who-status">Not connected</span>
         </div>
       </div>
     </header>

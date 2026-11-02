@@ -1,4 +1,6 @@
 import type { Accept } from "./catalog";
+import { assertPaymentSignatureAllowed, noteSignatureRequest } from "@/lib/spend";
+import type { SpendOffer } from "@/lib/mandate";
 
 export type ConnectedWallet = {
   address: string;
@@ -17,6 +19,13 @@ const CHAINS: Record<string, { chainId: string; chainName: string; rpc: string; 
     rpc: "https://mainnet.base.org",
     symbol: "ETH",
     explorer: "https://basescan.org",
+  },
+  "84532": {
+    chainId: "0x14a34",
+    chainName: "Base Sepolia",
+    rpc: "https://sepolia.base.org",
+    symbol: "ETH",
+    explorer: "https://sepolia.basescan.org",
   },
   "143": {
     chainId: "0x8f",
@@ -96,6 +105,54 @@ async function coinbaseProvider(): Promise<EthereumProvider> {
   return sdk.getProvider() as unknown as EthereumProvider;
 }
 
+export type WalletChoice = { id: string; name: string; icon?: string; provider: EthereumProvider };
+
+export function discoverWallets(): Promise<WalletChoice[]> {
+  if (typeof window === "undefined") return Promise.resolve([]);
+  return new Promise((resolve) => {
+    const found: WalletChoice[] = [];
+    const onAnnounce = (event: Event) => {
+      const detail = (event as CustomEvent<{ info?: { uuid?: string; name?: string; icon?: string }; provider?: EthereumProvider }>).detail;
+      const info = detail.info;
+      if (!detail?.provider || !info?.uuid) return;
+      if (found.some((item) => item.id === info.uuid)) return;
+      found.push({ id: info.uuid, name: info.name || "Wallet", icon: info.icon, provider: detail.provider });
+    };
+    window.addEventListener("eip6963:announceProvider", onAnnounce);
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    window.setTimeout(() => {
+      window.removeEventListener("eip6963:announceProvider", onAnnounce);
+      const injected = readInjected();
+      if (injected && found.length === 0) found.push({ id: "injected", name: "Browser wallet", provider: injected });
+      resolve(found);
+    }, 250);
+  });
+}
+
+export async function connectProvider(provider: EthereumProvider): Promise<ConnectedWallet> {
+  active = provider;
+  const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
+  const address = accounts?.[0];
+  if (!address) throw new Error("The wallet did not return an account.");
+  const chainId = String(await provider.request({ method: "eth_chainId" }));
+  const pub = { address, chainId };
+  localStorage.setItem("fba-public-wallet", JSON.stringify(pub));
+  window.dispatchEvent(new Event("fba-wallet"));
+  bindWalletEvents();
+  return pub;
+}
+
+export function readPublicWallet(): ConnectedWallet | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const parsed = JSON.parse(localStorage.getItem("fba-public-wallet") || "null") as ConnectedWallet | null;
+    if (!parsed?.address) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export async function connectWallet(): Promise<ConnectedWallet> {
   const provider = readInjected();
   if (!provider) throw new Error("Open Find & Buy inside your wallet, then tap Buy. Nothing is spent in this browser.");
@@ -104,7 +161,11 @@ export async function connectWallet(): Promise<ConnectedWallet> {
   const address = accounts?.[0];
   if (!address) throw new Error("The wallet did not return an account.");
   const chainId = String(await provider.request({ method: "eth_chainId" }));
-  return { address, chainId };
+  const pub = { address, chainId };
+  localStorage.setItem("fba-public-wallet", JSON.stringify(pub));
+  window.dispatchEvent(new Event("fba-wallet"));
+  bindWalletEvents();
+  return pub;
 }
 
 export async function ensureChain(network: string): Promise<void> {
@@ -130,6 +191,99 @@ export async function ensureChain(network: string): Promise<void> {
         },
       ],
     });
+  }
+}
+
+export function chainLabel(chainId: string): string {
+  const id = chainId.startsWith("0x") ? String(Number.parseInt(chainId, 16)) : chainId;
+  return CHAINS[id]?.chainName ?? `Chain ${chainId}`;
+}
+
+export function isBaseMainnet(chainId: string): boolean {
+  const id = chainId.startsWith("0x") ? String(Number.parseInt(chainId, 16)) : chainId;
+  return id === "8453";
+}
+
+export function disconnectWallet() {
+  active = null;
+  if (typeof localStorage !== "undefined") localStorage.removeItem("fba-public-wallet");
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("fba-wallet"));
+}
+
+let walletEventsBound = false;
+
+export function bindWalletEvents() {
+  if (walletEventsBound) return;
+  const provider = ethereumProvider() ?? readInjected();
+  if (!provider?.on) return;
+  walletEventsBound = true;
+  const sync = () => {
+    void (async () => {
+      try {
+        const accounts = (await provider.request({ method: "eth_accounts" })) as string[];
+        if (!accounts?.[0]) {
+          disconnectWallet();
+          return;
+        }
+        active = provider;
+        const chainId = String(await provider.request({ method: "eth_chainId" }));
+        localStorage.setItem("fba-public-wallet", JSON.stringify({ address: accounts[0], chainId }));
+        window.dispatchEvent(new Event("fba-wallet"));
+      } catch {
+        /* wallet unavailable */
+      }
+    })();
+  };
+  provider.on("accountsChanged", sync);
+  provider.on("chainChanged", sync);
+}
+
+const USDC_TOKENS: Record<string, { token: string; decimals: number; rpc: string }> = {
+  "8453": { token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", decimals: 6, rpc: "https://mainnet.base.org" },
+  "1": { token: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6, rpc: "https://cloudflare-eth.com" },
+  "137": { token: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", decimals: 6, rpc: "https://polygon-rpc.com" },
+  "42161": { token: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", decimals: 6, rpc: "https://arb1.arbitrum.io/rpc" },
+  "10": { token: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", decimals: 6, rpc: "https://mainnet.optimism.io" },
+  "43114": { token: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E", decimals: 6, rpc: "https://api.avax.network/ext/bc/C/rpc" },
+  "56": { token: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", decimals: 18, rpc: "https://bsc-dataseed.binance.org" },
+};
+
+function formatBalance(hex: string, decimals: number): string {
+  const value = BigInt(hex);
+  const base = 10n ** BigInt(decimals);
+  const whole = value / base;
+  const frac = (value % base).toString().padStart(decimals, "0").slice(0, 2).replace(/0+$/, "");
+  return frac ? `${whole.toString()}.${frac}` : whole.toString();
+}
+
+export async function readUsdcBalance(address: string, chainId: string): Promise<string | null> {
+  const id = chainId.startsWith("0x") ? String(Number.parseInt(chainId, 16)) : chainId;
+  const known = USDC_TOKENS[id];
+  if (!known || !/^0x[a-fA-F0-9]{40}$/.test(address)) return null;
+  const data = `0x70a08231${address.slice(2).toLowerCase().padStart(64, "0")}`;
+  try {
+    let hex = "";
+    const provider = ethereumProvider();
+    if (provider) {
+      try {
+        hex = String(await provider.request({ method: "eth_call", params: [{ to: known.token, data }, "latest"] }));
+      } catch {
+        hex = "";
+      }
+    }
+    if (!hex || hex === "0x") {
+      const response = await fetch(known.rpc, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: known.token, data }, "latest"] }),
+      });
+      const payload = (await response.json()) as { result?: string };
+      hex = payload.result || "";
+    }
+    if (!hex || hex === "0x") return "0";
+    return formatBalance(hex, known.decimals);
+  } catch {
+    return null;
   }
 }
 
@@ -183,7 +337,24 @@ export async function paymentBundle(
   description: string,
   accept: Accept,
   echoed?: { resource?: unknown; accepted?: unknown; extensions?: unknown },
-): Promise<{ v2: string; v1: string }> {
+): Promise<{ v2: string; v1: string; signature: string; nonce: string }> {
+  const priced = accept.priceLabel.startsWith("$") ? Number(accept.priceLabel.slice(1)) : Number.NaN;
+  let merchant = "";
+  try {
+    merchant = new URL(resourceUrl).hostname.replace(/^www\./, "");
+  } catch {
+    merchant = "";
+  }
+  const offer: SpendOffer = {
+    amountUsd: Number.isFinite(priced) ? priced : null,
+    merchant,
+    payTo: accept.payTo,
+    chainId: Number(accept.network.split(":")[1]) || 0,
+    asset: /usdc/i.test(`${accept.assetName} ${accept.asset}`) ? "USDC" : accept.assetName || "USDC",
+    category: description,
+    item: description.slice(0, 140) || merchant,
+  };
+  assertPaymentSignatureAllowed(offer);
   const ethereum = ethereumProvider();
   if (!ethereum) throw new Error("No wallet in this browser. Open Find & Buy inside the wallet, the same way monaf does.");
   if (!accept.evm || (accept.scheme !== "exact" && accept.scheme !== "eip3009")) {
@@ -242,6 +413,7 @@ export async function paymentBundle(
       nonce,
     },
   };
+  noteSignatureRequest();
   const signature = (await ethereum.request({
     method: "eth_signTypedData_v4",
     params: [account, JSON.stringify(typed)],
@@ -264,7 +436,7 @@ export async function paymentBundle(
         payload: { signature, authorization: typed.message },
       })
     : "";
-  return { v2, v1 };
+  return { v2, v1, signature: packed, nonce };
 }
 
 export async function signExactPayment(account: string, resourceUrl: string, description: string, accept: Accept): Promise<string> {

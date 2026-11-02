@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AgoraEssay } from "@/components/findbuy/agora-essay";
-import { AppHeader, JsonLd } from "@/components/findbuy/shell";
+import { JsonLd } from "@/components/findbuy/shell";
+import { SiteShell } from "@/components/shell/site-shell";
 import { ARTICLE_DESCRIPTION, ARTICLE_TITLE, PUBLISHED, articleJsonLd, pageHead } from "@/content/seo";
 
 export const Route = createFileRoute("/blog/find-and-buy-agents")({
@@ -28,12 +29,9 @@ export const Route = createFileRoute("/blog/find-and-buy-agents")({
 
 function ArticlePage() {
   return (
-    <div className="app">
+    <SiteShell>
       <JsonLd data={articleJsonLd()} />
-      <AppHeader active="blog" />
-      <main className="frame">
-        <AgoraEssay />
-      </main>
-    </div>
+      <AgoraEssay />
+    </SiteShell>
   );
 }

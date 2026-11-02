@@ -18,6 +18,10 @@ import {
 } from "@/lib/market/agent";
 import { pickPayable, type Accept, type Offer } from "@/lib/market/catalog";
 import { challengeEcho, connectWallet, paymentBundle, signMandate, walletLinks, type ConnectedWallet } from "@/lib/market/wallet";
+import { ApprovalSheet } from "@/components/mandate/approval-sheet";
+import { activeMandate, type Evaluation } from "@/lib/mandate";
+import { extractTxHash, recordSettled } from "@/lib/receipts";
+import { SpendBlocked, SpendNeedsApproval, approveSpend, assertPaymentSignatureAllowed, toSpendOffer } from "@/lib/spend";
 
 const CAPS = [5, 20, 50, 100];
 const DAYS = [20, 50, 200];
@@ -38,6 +42,7 @@ export function AgentDesk({ onReplay, openWallet = false }: { onReplay?: () => v
   const [found, setFound] = useState<ReturnType<typeof rankOffers>>([]);
   const [searching, setSearching] = useState(false);
   const [buying, setBuying] = useState(false);
+  const [pending, setPending] = useState<{ offer: Offer; accept: Accept; verdict: Evaluation } | null>(null);
   const [links, setLinks] = useState<{ name: string; href: string }[]>([]);
   const [step, setStep] = useState<Step>("wallet");
 
@@ -127,8 +132,28 @@ export function AgentDesk({ onReplay, openWallet = false }: { onReplay?: () => v
         setNote(`Merchant answered ${probe.status}. Nothing was paid.`);
         return;
       }
+      const spend = toSpendOffer(offer, live);
+      let verdict: Evaluation;
+      try {
+        verdict = assertPaymentSignatureAllowed(spend);
+      } catch (error) {
+        if (error instanceof SpendNeedsApproval) {
+          setPending({ offer, accept: live, verdict: error.verdict });
+          return;
+        }
+        if (error instanceof SpendBlocked) {
+          pushOrder(offer, live, "stopped", error.message);
+          setNote(error.message);
+          return;
+        }
+        throw error;
+      }
       const payment = await paymentBundle(wallet.address, offer.url, offer.description, live, challengeEcho(probe.paymentRequired, live));
       const settled = await relayPayment({ data: { url: offer.url, paymentSignature: payment.v2, legacyPayment: payment.v1 } });
+      const txHash = extractTxHash(settled.paymentResponse, settled.snippet);
+      if (txHash && live.network.endsWith(":8453")) {
+        recordSettled({ mandate: activeMandate(), offer: spend, evaluation: verdict, signature: payment.signature, nonce: payment.nonce, txHash });
+      }
       const ok = settled.status >= 200 && settled.status < 300;
       pushOrder(
         offer,
@@ -195,6 +220,24 @@ export function AgentDesk({ onReplay, openWallet = false }: { onReplay?: () => v
 
   return (
     <div className="journey">
+      {pending ? (
+        <ApprovalSheet
+          mandate={activeMandate()}
+          offer={toSpendOffer(pending.offer, pending.accept)}
+          verdict={pending.verdict}
+          onApprove={() => {
+            const next = pending;
+            approveSpend(toSpendOffer(next.offer, next.accept));
+            setPending(null);
+            void buy(next.offer, next.accept, false);
+          }}
+          onDecline={() => {
+            setPending(null);
+            setNote("Declined. Nothing was signed.");
+          }}
+          onClose={() => setPending(null)}
+        />
+      ) : null}
       <nav className="rail" aria-label="Find steps">
         {(
           [
