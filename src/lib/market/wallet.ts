@@ -20,13 +20,6 @@ const CHAINS: Record<string, { chainId: string; chainName: string; rpc: string; 
     symbol: "ETH",
     explorer: "https://basescan.org",
   },
-  "84532": {
-    chainId: "0x14a34",
-    chainName: "Base Sepolia",
-    rpc: "https://sepolia.base.org",
-    symbol: "ETH",
-    explorer: "https://sepolia.basescan.org",
-  },
   "143": {
     chainId: "0x8f",
     chainName: "Monad",
@@ -289,7 +282,6 @@ export async function readUsdcBalance(address: string, chainId: string): Promise
 
 const LEGACY_NAMES: Record<string, string> = {
   "eip155:8453": "base",
-  "eip155:84532": "base-sepolia",
   "eip155:1": "ethereum",
   "eip155:137": "polygon",
   "eip155:42161": "arbitrum",
@@ -377,9 +369,13 @@ export async function paymentBundle(
   }) as { scheme?: string; network?: string; extra?: Record<string, string>; maxTimeoutSeconds?: number };
   const extra: Record<string, string> = { assetTransferMethod: "eip3009", ...accept.extra, ...(accepted.extra ?? {}) };
   const now = Math.floor(Date.now() / 1000);
-  const timeout = Math.min(Math.max(accepted.maxTimeoutSeconds || accept.timeoutSeconds || 60, 30), 300);
-  const validAfter = String(now - 5);
-  const validBefore = String(now + timeout - 5);
+  const timeout = Math.min(Math.max(accepted.maxTimeoutSeconds || accept.timeoutSeconds || 60, 15), 300);
+  let validBefore = now + timeout;
+  let validAfter = now - 600;
+  if (validBefore - validAfter > timeout) {
+    validBefore = now + Math.max(timeout - 5, 10);
+    validAfter = validBefore - timeout + 1;
+  }
   const typed = {
     types: {
       EIP712Domain: [
@@ -408,8 +404,8 @@ export async function paymentBundle(
       from: account,
       to: accept.payTo,
       value: accept.amount,
-      validAfter,
-      validBefore,
+      validAfter: String(validAfter),
+      validBefore: String(validBefore),
       nonce,
     },
   };

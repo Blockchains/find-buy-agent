@@ -61,6 +61,46 @@ function pgliteBootstrapPlugin(): Plugin {
  * and returns the 302 / completion HTML. Deployed apps do not use the popup
  * (full-page OAuth redirect), so `apply: "serve"` is enough.
  */
+function x402ApiPlugin(): Plugin {
+  return {
+    name: "findbuyagent:x402-api",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        const pathOnly = (req.url ?? "").split("?", 1)[0] ?? "";
+        if (pathOnly !== "/api/x402/probe" && pathOnly !== "/api/x402/discover") {
+          next();
+          return;
+        }
+        try {
+          const mod = (await server.ssrLoadModule("/src/lib/live/probe.server.ts")) as {
+            probeAllowed: (url: string) => Promise<unknown>;
+            discoverBase: () => Promise<unknown>;
+          };
+          if ((req.method ?? "GET").toUpperCase() !== "GET") {
+            res.statusCode = 405;
+            res.setHeader("content-type", "application/json");
+            res.end(JSON.stringify({ error: "Use GET. This route never pays." }));
+            return;
+          }
+          if (pathOnly === "/api/x402/discover") {
+            res.setHeader("content-type", "application/json");
+            res.end(JSON.stringify({ items: await mod.discoverBase() }));
+            return;
+          }
+          const target = new URL(req.url ?? "", "http://127.0.0.1").searchParams.get("url") ?? "";
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify(await mod.probeAllowed(target)));
+        } catch (error) {
+          res.statusCode = 400;
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Could not read that resource." }));
+        }
+      });
+    },
+  };
+}
+
 function authPopupPlugin(): Plugin {
   return {
     name: "app-builder:auth-popup",
@@ -161,6 +201,7 @@ export default defineConfig(({ command, isPreview }) => ({
     pgliteBootstrapPlugin(),
     // Before tanstackStart so /auth/popup never falls through to the SPA.
     authPopupPlugin(),
+    x402ApiPlugin(),
     // Dev-only /__app-env, read by scripts/check-auth-invariant.mjs.
     appEnvPlugin(),
     // PWA head + ?install=1 tutorial page; runs before Start/Nitro.

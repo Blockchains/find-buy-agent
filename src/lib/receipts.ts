@@ -40,7 +40,19 @@ export function loadReceipts(): Receipt[] {
   try {
     const parsed = JSON.parse(localStorage.getItem(KEY) || "[]") as Receipt[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((row) => row && typeof row.hash === "string" && typeof row.prevHash === "string" && row.status !== ("simulated" as ReceiptStatus));
+    const kept = parsed.filter(
+      (row) => row && row.chainId === BASE_MAINNET && typeof row.txHash === "string" && /^0x[a-fA-F0-9]{64}$/.test(row.txHash) && typeof row.hash === "string",
+    );
+    let prev = GENESIS;
+    const migrated = kept.map((row) => {
+      const { hash: _hash, prevHash: _prev, ...rest } = row;
+      const body = { ...rest, prevHash: prev, status: "settled" as const, chainId: BASE_MAINNET };
+      const hash = hashReceipt(body);
+      prev = hash;
+      return { ...body, hash };
+    });
+    if (JSON.stringify(migrated) !== JSON.stringify(parsed)) write(migrated);
+    return migrated;
   } catch {
     return [];
   }
@@ -70,27 +82,13 @@ function append(body: Omit<Receipt, "prevHash" | "hash">): Receipt {
   return receipt;
 }
 
-export function recordAudit(input: {
+export function recordAudit(_input: {
   mandate: Mandate;
   offer: SpendOffer;
   status: "blocked" | "declined";
   checks: Check[];
 }): Receipt | null {
-  if (typeof localStorage === "undefined") return null;
-  return append({
-    id: crypto.randomUUID(),
-    mandateId: input.mandate.id,
-    createdAt: new Date().toISOString(),
-    item: input.offer.item || input.offer.merchant || "Buy",
-    merchant: input.offer.merchant,
-    merchantOfRecord: input.offer.merchant,
-    amountUsd: input.offer.amountUsd ?? 0,
-    asset: input.offer.asset || "USDC",
-    chainId: input.offer.chainId,
-    payTo: input.offer.payTo,
-    status: input.status,
-    checks: input.checks,
-  });
+  return null;
 }
 
 export function recordSettled(input: {

@@ -320,7 +320,7 @@ function asMandate(value: unknown): Mandate | null {
   if (!merchants || (merchants.mode !== "allowlist" && merchants.mode !== "any") || !Array.isArray(merchants.domains)) return null;
   if (!merchants.domains.every((domain) => typeof domain === "string" && normalizeDomain(domain))) return null;
   if (!Array.isArray(raw.payees) || !raw.payees.every((payee) => typeof payee === "string" && validPayee(payee))) return null;
-  if (!Array.isArray(raw.chains) || raw.chains.some((chain) => typeof chain !== "number" || chain === 84532 || !CHAIN_IDS.has(chain))) return null;
+  if (!Array.isArray(raw.chains) || raw.chains.some((chain) => typeof chain !== "number" || !CHAIN_IDS.has(chain))) return null;
   if (!Array.isArray(raw.assets) || raw.assets.some((asset) => asset !== "USDC")) return null;
   const categories = raw.categories as { block?: unknown } | undefined;
   if (!categories || !Array.isArray(categories.block) || categories.block.some((item) => typeof item !== "string")) return null;

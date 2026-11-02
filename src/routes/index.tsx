@@ -14,16 +14,12 @@ import {
 
 const DevApp = lazy(() => import("@/components/findbuy/find-buy-app").then((mod) => ({ default: mod.FindBuyApp })));
 
-type HomeSearch = { tab?: "vault" | "orders"; prompt?: string; step?: number; demo?: 1 };
+type HomeSearch = { tab?: "vault" | "orders" };
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): HomeSearch => {
     const next: HomeSearch = {};
     if (search.tab === "vault" || search.tab === "orders") next.tab = search.tab;
-    if (typeof search.prompt === "string") next.prompt = search.prompt.slice(0, 180);
-    const step = typeof search.step === "number" ? String(search.step) : search.step;
-    if (typeof step === "string" && /^\d$/.test(step)) next.step = Number(step);
-    if (search.demo === 1 || search.demo === "1") next.demo = 1;
     return next;
   },
   head: ({ match }) => {
@@ -54,7 +50,7 @@ function Home() {
   }
   return (
     <SiteShell>
-      <HomePage prompt={search.prompt} step={search.step} demo={search.demo === 1} />
+      <HomePage />
     </SiteShell>
   );
 }

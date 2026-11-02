@@ -109,7 +109,7 @@ export const buyingPosts: Post[] = [
       },
       {
         type: "p",
-        text: "Price dispersion on identical goods is mostly a search-cost story, the one George Stigler told in 1961. When polling another merchant is cheap, the dispersion that came from hiding the shipping table starts to collapse. Merchants who still hide the price behind “contact sales” simply fail the filter. An agent cannot book a demo at 11 p.m. and should not have to.",
+        text: "Price dispersion on identical goods is mostly a search-cost story, the one George Stigler told in 1961. When polling another merchant is cheap, the dispersion that came from hiding the shipping table starts to collapse. Merchants who still hide the price behind “contact sales” simply fail the filter. An agent cannot book a sales call at 11 p.m. and should not have to.",
       },
       {
         type: "h2",

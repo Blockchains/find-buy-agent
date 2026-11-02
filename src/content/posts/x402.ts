@@ -70,7 +70,7 @@ export const x402Posts: Post[] = [
       },
       {
         type: "p",
-        text: "Mastercard’s Agent Pay for Machines, described on 20 October 2026, uses x402 as its basis: a business sets a task and a limit, a service answers 402, the agent signs a payment voucher inside the limit, the provider checks the voucher and does the work. Vouchers can be exchanged off-chain and redeemed later. A Cloudflare Connect demo showed nine payments to two merchants under one approved budget. Same family as a Visa mandate — a ceiling, a signature, a refusal path — different settlement. Google’s September 2025 AP2 work also described an agent-to-agent x402 extension. The pattern is stable even where the asset is not: the agent pays because a person bounded the spend, not because the model felt confident.",
+        text: "Mastercard’s Agent Pay for Machines, described on 20 October 2026, uses x402 as its basis: a business sets a task and a limit, a service answers 402, the agent signs a payment voucher inside the limit, the provider checks the voucher and does the work. Vouchers can be exchanged off-chain and redeemed later. A Cloudflare Connect session showed nine payments to two merchants under one approved budget. Same family as a Visa mandate — a ceiling, a signature, a refusal path — different settlement. Google’s September 2025 AP2 work also described an agent-to-agent x402 extension. The pattern is stable even where the asset is not: the agent pays because a person bounded the spend, not because the model felt confident.",
       },
     ],
   },

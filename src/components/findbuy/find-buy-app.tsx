@@ -6,7 +6,7 @@ import { labelFromPhoto, money, normalizeLink, type Offer as Card, type Phone, t
 import { Orders, Vault } from "./panels";
 import { PhoneStage } from "./phone";
 import { AppHeader } from "./shell";
-import { useDemo } from "./use-demo";
+import { useDemo } from "./use-desk";
 import { listMarket, probeOffer, relayPayment } from "@/lib/market/api";
 import { COUNTRIES, deliveryLine, digestOf, loadAgent, rankOffers, saveAgent, spentToday, type Fulfillment } from "@/lib/market/agent";
 import { pickPayable, payableAccepts, type Accept, type Offer } from "@/lib/market/catalog";
@@ -20,9 +20,9 @@ import type { Evaluation } from "@/lib/mandate";
 type Deal = { offer: Offer; accept: Accept; challenged: boolean };
 
 export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialTab?: Tab; embedded?: boolean }) {
-  const demo = useDemo(initialTab);
+  const desk = useDemo(initialTab);
   const navigate = useNavigate();
-  const { state } = demo;
+  const { state } = desk;
   const deal = useRef<Deal | null>(null);
   const shelf = useRef<Offer[]>([]);
   const listed = useRef(false);
@@ -52,7 +52,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         : "Ready";
 
   const choose = (tab: Tab) => {
-    demo.setTab(tab);
+    desk.setTab(tab);
     void navigate({
       to: "/",
       search: tab === "shop" ? {} : { tab },
@@ -97,7 +97,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
 
   const publishList = (offers: Offer[], note: string) => {
     shelf.current = offers;
-    demo.focus({
+    desk.focus({
       phase: "live",
       run: "side",
       pill: "shopping",
@@ -138,7 +138,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       sub: query ? `Searching “${query}”.` : "Loading every network.",
       items: [],
     };
-    demo.focus({ phase: "live", run: "side", pill: "searching", pillTone: "line", phone: empty });
+    desk.focus({ phase: "live", run: "side", pill: "searching", pillTone: "line", phone: empty });
     try {
       const offsets = query ? [0] : Array.from({ length: 60 }, (_, index) => index * 100);
       const seen = new Set<string>();
@@ -170,7 +170,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         if (!query && added === 0) break;
       }
     } catch (error) {
-      demo.focus({
+      desk.focus({
         pill: "held",
         pillTone: "ghost",
         phone: { view: "picks", kicker: "Shop", title: "Find", sub: error instanceof Error ? error.message : "The registries did not answer.", items: [] },
@@ -182,7 +182,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
     if (typeof window === "undefined" || !window.matchMedia("(max-width: 720px)").matches) return;
     if (listed.current) return;
     listed.current = true;
-    demo.focus({
+    desk.focus({
       phase: "live",
       run: "side",
       command: "shop",
@@ -192,7 +192,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       phone: { view: "note", kicker: "Shop", title: "Choose one.", sub: "Loading what you can buy with crypto.", rows: [] },
     });
     void loadShelf();
-  }, [demo]);
+  }, [desk]);
 
   const buyOffer = async (offer: Offer, accept: Accept) => {
     if (busy) return;
@@ -200,7 +200,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
     stored.rules = { ...stored.rules, auto: true };
     if (!stored.delivery.country) {
       if (state.phone.view === "picks") {
-        demo.focus({ pill: "needs you", pillTone: "fill", phone: { ...state.phone, sub: "Choose a country, then buy." } });
+        desk.focus({ pill: "needs you", pillTone: "fill", phone: { ...state.phone, sub: "Choose a country, then buy." } });
       }
       document.getElementById("deliver-country")?.focus();
       return;
@@ -217,7 +217,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       }
       if (probe.status !== 402 && !probe.paymentRequired && probe.accepts.length === 0) {
         deal.current = null;
-        demo.focus({
+        desk.focus({
           pill: "held",
           pillTone: "ghost",
           phone: { view: "note", kicker: "Not for sale", title: offer.name, sub: `Merchant answered ${probe.status}. Nothing was signed.`, rows: [] },
@@ -226,11 +226,11 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       }
       const price = usd(live.priceLabel);
       if (price !== null && price > stored.rules.maxUsd) {
-        demo.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, live, `${live.priceLabel} is over the $${stored.rules.maxUsd} cap. Nothing was signed.`) });
+        desk.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, live, `${live.priceLabel} is over the $${stored.rules.maxUsd} cap. Nothing was signed.`) });
         return;
       }
       if (price !== null && spentToday(stored.orders) + price > stored.rules.dailyUsd) {
-        demo.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, live, `This would pass the $${stored.rules.dailyUsd} daily cap. Nothing was signed.`) });
+        desk.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, live, `This would pass the $${stored.rules.dailyUsd} daily cap. Nothing was signed.`) });
         return;
       }
       const spend = toSpendOffer(offer, live);
@@ -243,7 +243,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
           return;
         }
         if (error instanceof SpendBlocked) {
-          demo.focus({
+          desk.focus({
             phase: "ask",
             pill: "needs you",
             pillTone: "fill",
@@ -253,7 +253,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         }
         throw error;
       }
-      demo.focus({
+      desk.focus({
         pill: "paying",
         pillTone: "line",
         phone: { view: "note", kicker: "Wallet", title: "Connect once.", sub: `Then the agent is signed to spend, delivered to ${stored.delivery.country}.`, rows: [] },
@@ -262,7 +262,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       const digest = digestOf(stored.rules, stored.delivery);
       const already = stored.mandate && stored.mandate.address.toLowerCase() === wallet.address.toLowerCase() && stored.mandate.digest === digest;
       if (!already) {
-        demo.focus({
+        desk.focus({
           pill: "paying",
           pillTone: "line",
           phone: {
@@ -277,7 +277,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         stored.mandate = { signature, address: wallet.address, signedAt: new Date().toISOString(), digest };
         saveAgent(stored);
       }
-      demo.focus({
+      desk.focus({
         pill: "paying",
         pillTone: "line",
         phone: { view: "note", kicker: "Pay", title: live.priceLabel, sub: `Sign the USDC spend on ${live.networkLabel}.`, rows: [{ k: "Deliver", v: stored.delivery.country }] },
@@ -303,13 +303,13 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
       saveAgent({ ...stored, orders: [order, ...stored.orders].slice(0, 20) });
       deal.current = null;
       publishList(shelf.current, `${offer.name}. ${order.detail}`);
-      demo.focus({
+      desk.focus({
         pill: ok ? "ordered" : "held",
         pillTone: ok ? "mint" : "ghost",
         approved: state.approved + (ok ? 1 : 0),
       });
     } catch (error) {
-      demo.focus({
+      desk.focus({
         phase: "ask",
         pill: "needs you",
         pillTone: "fill",
@@ -329,11 +329,11 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
     if (!query) return;
     if (/\btv\b|oled|exact item/i.test(query)) {
       deal.current = null;
-      demo.submit(query);
+      desk.submit(query);
       return;
     }
     setBusy(true);
-    demo.focus({
+    desk.focus({
       phase: "live",
       run: "side",
       command: `find ${query}`,
@@ -350,7 +350,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         const probe = await probeOffer({ data: { url: link } });
         const accept = pickPayable(probe.accepts);
         if (!accept) {
-          demo.focus({
+          desk.focus({
             pill: "held",
             pillTone: "ghost",
             phone: {
@@ -365,14 +365,14 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         }
         const offer = offerFromLink(link, accept);
         deal.current = { offer, accept, challenged: true };
-        demo.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, accept, "The merchant is asking for payment. Approve to sign it.") });
+        desk.focus({ phase: "ask", pill: "needs you", pillTone: "fill", phone: sheet(offer, accept, "The merchant is asking for payment. Approve to sign it.") });
         return;
       }
       const page = await listMarket({ data: { source: "all", offset: 0, limit: 24, query } });
       const ranked = rankOffers(page.sources.flatMap((source) => source.offers), loadAgent().rules).filter((row) => pickPayable(row.offer.accepts));
       const best = ranked[0];
       if (!best) {
-        demo.focus({
+        desk.focus({
           pill: "held",
           pillTone: "ghost",
           phone: { view: "note", kicker: "Nothing payable", title: query, sub: "No EVM stablecoin price matched these rules.", rows: [] },
@@ -395,7 +395,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
           art: "letter" as const,
         };
       });
-      demo.focus({
+      desk.focus({
         phase: "live",
         pill: "shopping",
         pillTone: "fill",
@@ -411,7 +411,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
         },
       });
     } catch (error) {
-      demo.focus({
+      desk.focus({
         pill: "held",
         pillTone: "ghost",
         phone: {
@@ -430,10 +430,10 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
   const openDeal = () => {
     const current = deal.current;
     if (!current) {
-      demo.buy();
+      desk.buy();
       return;
     }
-    demo.focus({
+    desk.focus({
       phase: "ask",
       pill: "needs you",
       pillTone: "fill",
@@ -444,7 +444,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
   const approve = async () => {
     const current = deal.current;
     if (!current || busy) {
-      if (!current) demo.approve();
+      if (!current) desk.approve();
       return;
     }
     await buyOffer(current.offer, current.accept);
@@ -476,11 +476,11 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
           </div>
           <div className="cmdmeta">
             {showSkip ? (
-              <button type="button" className="linkish" onClick={demo.skip}>
+              <button type="button" className="linkish" onClick={desk.skip}>
                 skip
               </button>
             ) : (
-              <button type="button" className="linkish" onClick={demo.replay}>
+              <button type="button" className="linkish" onClick={desk.replay}>
                 replay
               </button>
             )}
@@ -530,16 +530,16 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
               onApprove={() => void approve()}
               onDecline={() => {
                 deal.current = null;
-                demo.decline();
+                desk.decline();
               }}
               onBuy={openDeal}
-              onAskAgain={demo.askAgain}
-              onWeek={demo.showDigest}
+              onAskAgain={desk.askAgain}
+              onWeek={desk.showDigest}
               onAskText={(text) => void findLive(text)}
               onAskLink={(url) => void findLive(url)}
               onAskPhoto={(photo) => void findLive(labelFromPhoto(photo.name))}
-              onInput={demo.setInput}
-              onReplay={demo.replay}
+              onInput={desk.setInput}
+              onReplay={desk.replay}
               onPick={setSelectedId}
               selectedId={selectedId}
               buyLabel={buyLabel}
@@ -597,7 +597,7 @@ export function FindBuyApp({ initialTab = "shop", embedded = false }: { initialT
           }}
           onDecline={() => {
             setPending(null);
-            demo.focus({
+            desk.focus({
               phase: "ask",
               pill: "held",
               pillTone: "ghost",

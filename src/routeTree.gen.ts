@@ -18,6 +18,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ProtocolsRouteImport } from './routes/protocols'
 import { Route as ReceiptsRouteImport } from './routes/receipts'
 import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as BlogFindAndBuyAgentsRouteImport } from './routes/blog/find-and-buy-agents'
@@ -67,6 +68,11 @@ const SecurityRoute = SecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/protocols': typeof ProtocolsRoute
   '/receipts': typeof ReceiptsRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog/': typeof BlogIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/protocols': typeof ProtocolsRoute
   '/receipts': typeof ReceiptsRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog': typeof BlogIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/protocols': typeof ProtocolsRoute
   '/receipts': typeof ReceiptsRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/find-and-buy-agents': typeof BlogFindAndBuyAgentsRoute
   '/blog/': typeof BlogIndexRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/protocols'
     | '/receipts'
     | '/security'
+    | '/settings'
     | '/blog/$slug'
     | '/blog/find-and-buy-agents'
     | '/blog/'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/protocols'
     | '/receipts'
     | '/security'
+    | '/settings'
     | '/blog/$slug'
     | '/blog/find-and-buy-agents'
     | '/blog'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/protocols'
     | '/receipts'
     | '/security'
+    | '/settings'
     | '/blog/$slug'
     | '/blog/find-and-buy-agents'
     | '/blog/'
@@ -181,6 +193,7 @@ export interface RootRouteChildren {
   ProtocolsRoute: typeof ProtocolsRoute
   ReceiptsRoute: typeof ReceiptsRoute
   SecurityRoute: typeof SecurityRoute
+  SettingsRoute: typeof SettingsRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogFindAndBuyAgentsRoute: typeof BlogFindAndBuyAgentsRoute
   BlogIndexRoute: typeof BlogIndexRoute
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/': {
       id: '/blog/'
       path: '/blog'
@@ -285,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProtocolsRoute: ProtocolsRoute,
   ReceiptsRoute: ReceiptsRoute,
   SecurityRoute: SecurityRoute,
+  SettingsRoute: SettingsRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogFindAndBuyAgentsRoute: BlogFindAndBuyAgentsRoute,
   BlogIndexRoute: BlogIndexRoute,

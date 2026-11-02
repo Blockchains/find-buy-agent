@@ -302,7 +302,7 @@ export const visaPosts: Post[] = [
       },
       {
         type: "p",
-        text: "For FindBuyAgent.com that means the shopping surface can remain a phone, a link, and a photo. The payment surface, when it is a Visa purchase, should be able to present an agent the merchant can verify. We do not pretend that signature exists in the demo. We do insist that the product’s shape — find freely, buy only after approval — is the shape TAP is for.",
+        text: "For FindBuyAgent.com that means the shopping surface can remain a phone, a link, and a photo. The payment surface, when it is a Visa purchase, should be able to present an agent the merchant can verify. We do not pretend that signature exists in this product yet. We do insist that the product’s shape — find freely, buy only after approval — is the shape TAP is for.",
       },
     ],
   },

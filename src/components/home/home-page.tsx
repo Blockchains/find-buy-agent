@@ -1,9 +1,7 @@
-import { lazy, Suspense, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { listings } from "@/content/posts";
+import { LiveShop } from "@/components/live/shop";
 import { Card, Chip } from "@/components/ui/kit";
-
-const DevApp = lazy(() => import("@/components/findbuy/find-buy-app").then((mod) => ({ default: mod.FindBuyApp })));
 
 const FAQ = [
   ["Does FindBuyAgent hold my keys?", "No. Signing stays in your injected wallet. This site stores only public data such as an address, chain id, rules, and receipts."],
@@ -12,12 +10,8 @@ const FAQ = [
   ["Can I say no?", "Yes. Decline stops the step. Nothing is signed."],
 ];
 
-export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: string; step?: number; demo?: boolean }) {
+export function HomePage() {
   const posts = listings().slice(0, 3);
-  const [dev, setDev] = useState(false);
-  void prompt;
-  void step;
-  void demo;
   return (
     <div className="wrap">
       <section className="hero" aria-labelledby="home-title">
@@ -30,6 +24,7 @@ export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: str
         </div>
         <p className="fine-note">You sign in your own wallet. FindBuyAgent does not hold funds.</p>
       </section>
+      <LiveShop />
       <section className="section" aria-labelledby="routes">
         <h2 id="routes">On this site</h2>
         <div className="chip-row">
@@ -41,6 +36,7 @@ export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: str
           <Chip href="/security">Security</Chip>
           <Chip href="/faq">FAQ</Chip>
           <Chip href="/pricing">Pricing</Chip>
+          <Chip href="/settings">Settings</Chip>
           <Chip href="/blog">Blog</Chip>
         </div>
       </section>
@@ -118,15 +114,6 @@ export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: str
         ))}
         <p><Link to="/faq">All questions</Link></p>
       </section>
-      <details className="section" onToggle={(event) => setDev((event.target as HTMLDetailsElement).open)}>
-        <summary>Developer view</summary>
-        <p className="fine-note">The existing find, vault, and orders tools. Same signing code.</p>
-        {dev ? (
-          <Suspense fallback={<p>Loading the developer view…</p>}>
-            <DevApp embedded />
-          </Suspense>
-        ) : null}
-      </details>
     </div>
   );
 }

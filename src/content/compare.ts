@@ -158,7 +158,7 @@ export const COMPARE_ROWS: CompareRow[] = [
     rails: "Solana/EVM",
     keys: "Phantom wallet",
     limits: dash,
-    approvals: "Simulate-first tools",
+    approvals: "Asks before sending",
     receipts: dash,
     reach: dash,
     sourceLabel: "docs.phantom.com",

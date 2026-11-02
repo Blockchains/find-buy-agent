@@ -25,6 +25,7 @@ const NAMES: Record<string, string> = {
   "/faq": "FAQ",
   "/security": "Security",
   "/pricing": "Pricing",
+  "/settings": "Settings",
 };
 
 function crumbsFor(path: string) {
@@ -40,6 +41,33 @@ function crumbsFor(path: string) {
     { name: NAMES[path] ?? "Page", path },
   ]);
 }
+
+function Blockie({ address }: { address: string }) {
+  const cells = [];
+  let seed = 0;
+  for (let index = 2; index < address.length; index += 1) seed = (seed * 33 + address.charCodeAt(index)) >>> 0;
+  for (let y = 0; y < 8; y += 1) {
+    for (let x = 0; x < 4; x += 1) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      if (seed % 2 !== 0) continue;
+      cells.push(<rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" />);
+      cells.push(<rect key={`m-${x}-${y}`} x={7 - x} y={y} width="1" height="1" />);
+    }
+  }
+  return (
+    <svg className="blockie" viewBox="0 0 8 8" aria-hidden="true">
+      {cells}
+    </svg>
+  );
+}
+
+const INSTALL = [
+  { name: "MetaMask", site: "https://metamask.io/download/", deep: "https://metamask.app.link/dapp/findbuyagent.com" },
+  { name: "Coinbase Wallet", site: "https://www.coinbase.com/wallet/downloads", deep: "https://go.cb-w.com/dapp?cb_url=https%3A%2F%2Ffindbuyagent.com" },
+  { name: "Rabby", site: "https://rabby.io/", deep: "https://rabby.io/" },
+  { name: "Trust", site: "https://trustwallet.com/download", deep: "https://link.trustwallet.com/open_url?coin_id=60&url=https%3A%2F%2Ffindbuyagent.com" },
+  { name: "Phantom", site: "https://phantom.com/download", deep: "https://phantom.com/ul/browse/https%3A%2F%2Ffindbuyagent.com" },
+];
 
 function applyTheme(mode: "system" | "light" | "dark") {
   const dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -65,6 +93,16 @@ export function SiteShell({ children }: { children: ReactNode }) {
     bindWalletEvents();
     const onWallet = () => setWallet(readPublicWallet());
     window.addEventListener("fba-wallet", onWallet);
+    const openConnect = () => {
+      setError("");
+      void discoverWallets().then((list) => setChoices(list));
+    };
+    window.addEventListener("fba-connect", openConnect);
+    const onReceipt = () => {
+      const current = readPublicWallet();
+      if (current) void readUsdcBalance(current.address, "8453").then(setUsdc);
+    };
+    window.addEventListener("fba-receipts", onReceipt);
     const query = window.matchMedia("(prefers-color-scheme: dark)");
     const onScheme = () => {
       if (localStorage.getItem("fba-theme") === "system" || !localStorage.getItem("fba-theme")) applyTheme("system");
@@ -73,6 +111,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
     return () => {
       query.removeEventListener("change", onScheme);
       window.removeEventListener("fba-wallet", onWallet);
+      window.removeEventListener("fba-connect", openConnect);
+      window.removeEventListener("fba-receipts", onReceipt);
     };
   }, []);
 
@@ -124,16 +164,29 @@ export function SiteShell({ children }: { children: ReactNode }) {
               <option value="dark">Dark</option>
             </select>
           </label>
+          <Link to="/settings" aria-label="Settings">
+            Settings
+          </Link>
           {wallet ? (
-            <>
-              <span className="ui-chip hash" title={`${wallet.address} · ${chainLabel(wallet.chainId)}`}>
-                {wallet.address.slice(0, 6)}…{wallet.address.slice(-4)} · {chainLabel(wallet.chainId)}
+            <details className="wallet-menu">
+              <summary>
+                <Blockie address={wallet.address} />
+                {wallet.address.slice(0, 6)}…{wallet.address.slice(-4)} · {isBaseMainnet(wallet.chainId) ? "Base" : chainLabel(wallet.chainId)}
                 {usdc !== null ? ` · ${usdc} USDC` : ""}
-              </span>
-              <Button variant="ghost" onClick={() => disconnectWallet()}>
+              </summary>
+              <button
+                type="button"
+                onClick={() => {
+                  void navigator.clipboard.writeText(wallet.address);
+                }}
+              >
+                Copy
+              </button>
+              <a href={`https://basescan.org/address/${wallet.address}`}>Basescan</a>
+              <button type="button" onClick={() => disconnectWallet()}>
                 Disconnect
-              </Button>
-            </>
+              </button>
+            </details>
           ) : (
             <>
               <span className="ui-chip">Not connected</span>
@@ -200,7 +253,21 @@ export function SiteShell({ children }: { children: ReactNode }) {
       {choices ? (
         <Sheet title="Connect a wallet" onClose={() => setChoices(null)}>
           <p>FindBuyAgent asks your wallet to sign. It never sees a seed phrase or a private key.</p>
-          {choices.length === 0 ? <p>No injected wallet answered. Open this site inside a wallet browser.</p> : null}
+          {choices.length === 0 ? (
+            <div className="card-list">
+              <p>No wallet answered in this browser.</p>
+              {INSTALL.map((item) => (
+                <article key={item.name} className="ui-card">
+                  <h3>{item.name}</h3>
+                  <p>
+                    <a href={item.site}>Install</a>
+                    {" · "}
+                    <a href={item.deep}>Open in wallet app</a>
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : null}
           {error ? <p>{error}</p> : null}
           {choices.map((choice) => (
             <Button
@@ -209,6 +276,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 void connectProvider(choice.provider)
                   .then((next) => {
                     setWallet(next);
+                    localStorage.setItem("fba-wallet-name", choice.name);
                     setChoices(null);
                   })
                   .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "The wallet did not connect."));

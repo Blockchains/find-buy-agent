@@ -600,6 +600,63 @@
   min-height: 44px;
 }
 
+.blockie {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  vertical-align: middle;
+  fill: var(--accent);
+  background: var(--surface-2);
+}
+.wallet-menu summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.wallet-menu {
+  position: relative;
+}
+.wallet-menu a,
+.wallet-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+}
+.live-shop .pick {
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.live-shop .pick.on {
+  outline: 2px solid var(--accent);
+}
+.price-xl {
+  font-size: 2rem;
+  font-weight: 600;
+}
+.seal {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.toast {
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--r-md);
+}
+.paid pre,
+.live-shop pre {
+  overflow: auto;
+  max-height: 240px;
+}
+html[data-reduce="1"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
 .seq svg {
   width: 100%;
   height: auto;

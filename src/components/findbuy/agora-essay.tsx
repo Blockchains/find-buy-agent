@@ -301,7 +301,7 @@ export function AgoraEssay() {
 
       <h3>1. Herbert Simon and the end of satisficing (1955)</h3>
       <p>
-        In his theory of bounded rationality, Herbert Simon demonstrated that human beings lack the cognitive
+        In his theory of bounded rationality, Herbert Simon showed that human beings lack the cognitive
         architecture to act as the coldly rational utility-maximizers of textbook economics. Faced with
         complex multi-variable choices, humans satisfice: we stop searching as soon as we encounter the first
         option that is good enough.
@@ -633,7 +633,7 @@ export function AgoraEssay() {
           field drops the SKU in microseconds.
         </li>
         <li>
-          Stop hiding B2B prices behind “book a demo” if agents are already building the shortlist. Expose
+          Stop hiding B2B prices behind “book a call” if agents are already building the shortlist. Expose
           tiered prices, volume curves, and uptime promises on machine-readable endpoints.
         </li>
         <li>

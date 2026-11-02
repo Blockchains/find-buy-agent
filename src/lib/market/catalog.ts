@@ -152,7 +152,6 @@ function normalizeAccept(raw: unknown): Accept | null {
 
 const LEGACY_NETWORKS: Record<string, string> = {
   base: "eip155:8453",
-  "base-sepolia": "eip155:84532",
   ethereum: "eip155:1",
   mainnet: "eip155:1",
   polygon: "eip155:137",
