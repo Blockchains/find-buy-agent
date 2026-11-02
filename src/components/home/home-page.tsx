@@ -1,24 +1,23 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { listings } from "@/content/posts";
-import { FindBuyDemo } from "./find-buy-demo";
 import { Card, Chip } from "@/components/ui/kit";
 
 const DevApp = lazy(() => import("@/components/findbuy/find-buy-app").then((mod) => ({ default: mod.FindBuyApp })));
 
 const FAQ = [
   ["Does FindBuyAgent hold my keys?", "No. Signing stays in your injected wallet. This site stores only public data such as an address, chain id, rules, and receipts."],
-  ["Does the demo spend money?", "No. The offers are examples. Decline means nothing is signed. The x402 testnet button signs only after you confirm, and the demo does not submit that signature."],
-  ["What is a mandate?", "Rules a buy is checked against before a signature: a per-buy cap, a weekly cap, and an ask-first line."],
+  ["Does a signature move funds?", "Only when you approve a live x402 payment in your wallet. A receipt is saved only after a Base mainnet transaction hash comes back."],
+  ["What is a mandate?", "Rules a buy is checked against before a signature: a per-buy cap, a window, and an ask-first line."],
   ["Can I say no?", "Yes. Decline stops the step. Nothing is signed."],
 ];
 
 export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: string; step?: number; demo?: boolean }) {
   const posts = listings().slice(0, 3);
   const [dev, setDev] = useState(false);
-  useEffect(() => {
-    if (demo) document.getElementById("demo")?.scrollIntoView();
-  }, [demo]);
+  void prompt;
+  void step;
+  void demo;
   return (
     <div className="wrap">
       <section className="hero" aria-labelledby="home-title">
@@ -26,16 +25,29 @@ export function HomePage({ prompt = "", step = 0, demo = false }: { prompt?: str
         <h1 id="home-title">An agent that finds it, asks first, and lets you sign.</h1>
         <p className="lede">FindBuyAgent compares stores, checks every buy against rules you set, and settles with x402 from your own wallet. No keys leave your wallet.</p>
         <div className="cta-row">
-          <a className="ui-btn primary" href="#demo">Try the demo</a>
+          <Link className="ui-btn primary" to="/merchants">See live merchants</Link>
           <Link className="ui-btn secondary" to="/mandates">Build a mandate</Link>
         </div>
-        <p className="fine-note">Preview. Demo uses example data.</p>
+        <p className="fine-note">You sign in your own wallet. FindBuyAgent does not hold funds.</p>
       </section>
-      <FindBuyDemo initialPrompt={prompt} initialStep={step} />
+      <section className="section" aria-labelledby="routes">
+        <h2 id="routes">On this site</h2>
+        <div className="chip-row">
+          <Chip href="/mandates">Mandates</Chip>
+          <Chip href="/receipts">Receipts</Chip>
+          <Chip href="/protocols">Protocols</Chip>
+          <Chip href="/compare">Compare</Chip>
+          <Chip href="/merchants">Merchants</Chip>
+          <Chip href="/security">Security</Chip>
+          <Chip href="/faq">FAQ</Chip>
+          <Chip href="/pricing">Pricing</Chip>
+          <Chip href="/blog">Blog</Chip>
+        </div>
+      </section>
       <section className="section" aria-labelledby="how">
         <h2 id="how">How it works</h2>
         <div className="grid-3">
-          <Card><h3>Find</h3><p>Type it, paste a link, or name a photo. The demo labels those results as examples.</p></Card>
+          <Card><h3>Find</h3><p>Type it, paste a link, or use a photo name. Live prices are whatever the merchant asks in the 402.</p></Card>
           <Card><h3>Ask</h3><p>Every buy is checked against your mandate. Anything outside it waits for you.</p></Card>
           <Card><h3>Sign</h3><p>Your wallet signs an exact-amount authorization. You get a receipt. FindBuyAgent does not hold the funds.</p></Card>
         </div>

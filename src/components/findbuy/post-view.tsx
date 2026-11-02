@@ -126,6 +126,18 @@ export function PostView({ post }: { post: Post }) {
       {post.blocks.map((block, index) => (
         <BlockView key={index} block={block} />
       ))}
+      <aside className="ui-card">
+        <h2>Try it</h2>
+        <p>
+          {post.series === "x402" ? (
+            <a href="/protocols#x402">See the x402 sequence</a>
+          ) : post.series === "Visa" ? (
+            <a href="/protocols#visa-tap">See Visa TAP</a>
+          ) : (
+            <Link to="/mandates">Build a mandate</Link>
+          )}
+        </p>
+      </aside>
       {related.length > 0 ? (
         <aside className="related">
           <h2>Continue</h2>

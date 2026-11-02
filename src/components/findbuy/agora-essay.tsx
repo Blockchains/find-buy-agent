@@ -695,6 +695,12 @@ export function AgoraEssay() {
         persuaded. It is an autonomous fiduciary waiting to verify a claim, negotiate a value, and settle on
         the spot.
       </p>
+      <aside className="ui-card">
+        <h2>Try it</h2>
+        <p>
+          <a href="/mandates">Build a mandate</a>
+        </p>
+      </aside>
       <p className="colophon">
         First essay from <a href={ORIGIN}>FindBuyAgent.com</a>. Canonical URL{" "}
         <a href={ARTICLE_URL}>{ARTICLE_URL.replace("https://", "")}</a>.

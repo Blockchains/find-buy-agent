@@ -1,6 +1,9 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SiteShell } from "@/components/shell/site-shell";
 import { siteJsonLd } from "@/content/seo";
 import "@fontsource/ibm-plex-sans/latin-400.css";
 import "@fontsource/ibm-plex-sans/latin-500.css";
@@ -16,6 +19,7 @@ const jsonLd = JSON.stringify(siteJsonLd());
 const themeBoot = `(function(){try{var m=localStorage.getItem("fba-theme");var dark=m==="dark"||(m!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.setAttribute("data-theme",dark?"dark":"light");}catch(e){}})();`;
 
 export const Route = createRootRoute({
+  notFoundComponent: NotFound,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -49,3 +53,27 @@ export const Route = createRootRoute({
     </html>
   ),
 });
+
+function NotFound() {
+  useEffect(() => {
+    document.title = "Page not found | FindBuyAgent";
+  }, []);
+  return (
+    <SiteShell>
+      <title>Page not found | FindBuyAgent</title>
+      <article className="wrap section">
+        <h1>Page not found</h1>
+        <p>That address is not on FindBuyAgent.</p>
+        <ul>
+          <li><Link to="/">Find</Link></li>
+          <li><Link to="/merchants">Merchants</Link></li>
+          <li><Link to="/mandates">Mandates</Link></li>
+          <li><Link to="/protocols">Protocols</Link></li>
+          <li><Link to="/compare">Compare</Link></li>
+          <li><Link to="/blog">Blog</Link></li>
+          <li><Link to="/faq">FAQ</Link></li>
+        </ul>
+      </article>
+    </SiteShell>
+  );
+}

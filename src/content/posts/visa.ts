@@ -335,7 +335,7 @@ export const visaPosts: Post[] = [
           "The BILL Payment Agent is registered using Visa’s Trusted Agent Protocol and the agentic directory.",
           "The agent uses tokenized payment credentials, with controls aligned to that approved instruction, under the Visa Intelligent Commerce portfolio.",
           "Billtrust, on the supplier side, recognizes and authenticates the agent and lets it into the portal that used to require a person.",
-          "The payment completes. Visa said the pilot was processing end-to-end transactions with participating customers and suppliers.",
+          "The payment completes. Visa said the pilot was processing end-to-end transactions with participating buyers and suppliers.",
         ],
       },
       {

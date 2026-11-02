@@ -600,6 +600,69 @@
   min-height: 44px;
 }
 
+.seq svg {
+  width: 100%;
+  height: auto;
+  color: var(--text);
+}
+.seq-step {
+  opacity: 0.28;
+}
+.seq-step.is-done,
+.seq-step.is-on {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seq-step {
+    opacity: 1;
+  }
+}
+.layer-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.layer-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.card-list {
+  display: grid;
+  gap: 12px;
+}
+@media (min-width: 800px) {
+  .card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .compare-page .card-list,
+  .card-list.compare-cards {
+    display: none;
+  }
+}
+.pin-card {
+  margin: 16px 0;
+}
+@media (min-width: 800px) {
+  .pin-card {
+    display: none;
+  }
+}
+@media (max-width: 799px) {
+  .compare-scroll {
+    display: none;
+  }
+}
+.compare-scroll {
+  overflow-x: auto;
+}
+
+
 .sr {
   position: absolute;
   width: 1px;

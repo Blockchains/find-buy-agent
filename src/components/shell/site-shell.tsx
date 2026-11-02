@@ -1,10 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import { Button, Sheet } from "@/components/ui/kit";
+import { JsonLd } from "@/components/findbuy/shell";
+import { breadcrumbJsonLd } from "@/content/seo";
 import { bindWalletEvents, chainLabel, connectProvider, disconnectWallet, discoverWallets, ensureChain, isBaseMainnet, readPublicWallet, readUsdcBalance, type WalletChoice } from "@/lib/market/wallet";
 
 const LINKS = [
-  { to: "/", label: "Demo" },
+  { to: "/", label: "Find" },
   { to: "/mandates", label: "Mandates" },
   { to: "/receipts", label: "Receipts" },
   { to: "/protocols", label: "Protocols" },
@@ -12,6 +14,32 @@ const LINKS = [
   { to: "/merchants", label: "Merchants" },
   { to: "/blog", label: "Blog" },
 ] as const;
+
+const NAMES: Record<string, string> = {
+  "/mandates": "Mandates",
+  "/receipts": "Receipts",
+  "/protocols": "Protocols",
+  "/compare": "Compare",
+  "/merchants": "Merchants",
+  "/blog": "Blog",
+  "/faq": "FAQ",
+  "/security": "Security",
+  "/pricing": "Pricing",
+};
+
+function crumbsFor(path: string) {
+  if (path.startsWith("/blog/")) {
+    return breadcrumbJsonLd([
+      { name: "FindBuyAgent", path: "/" },
+      { name: "Blog", path: "/blog" },
+      { name: "Essay", path },
+    ]);
+  }
+  return breadcrumbJsonLd([
+    { name: "FindBuyAgent", path: "/" },
+    { name: NAMES[path] ?? "Page", path },
+  ]);
+}
 
 function applyTheme(mode: "system" | "light" | "dark") {
   const dark = mode === "dark" || (mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -64,6 +92,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="site">
+      {path !== "/" ? <JsonLd data={{ "@context": "https://schema.org", ...crumbsFor(path) }} /> : null}
       <a className="skip" href="#content">
         Skip to content
       </a>

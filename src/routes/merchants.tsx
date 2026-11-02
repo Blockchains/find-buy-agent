@@ -1,25 +1,51 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense } from "react";
-import { docHead } from "@/components/pages/doc";
+import { JsonLd } from "@/components/findbuy/shell";
+import { MerchantsPage } from "@/components/pages/merchants-page";
 import { SiteShell } from "@/components/shell/site-shell";
+import { ORIGIN, breadcrumbJsonLd, pageHead } from "@/content/seo";
 
-const DevApp = lazy(() => import("@/components/findbuy/find-buy-app").then((mod) => ({ default: mod.FindBuyApp })));
+const TITLE = "Accept Agent Payments with x402 | FindBuyAgent Merchants";
+const DESCRIPTION = "Return HTTP 402 on Base, or keep ACP checkout. A read-only 402 check and the live CDP Bazaar list. Nothing on this page pays.";
 
 export const Route = createFileRoute("/merchants")({
-  head: () => docHead("Merchants | FindBuyAgent", "Live x402 merchants you can pay from your own wallet. Prices come from the public registries.", "/merchants"),
+  head: () => {
+    const head = pageHead({ title: TITLE, description: DESCRIPTION, path: "/merchants" });
+    return { meta: [...head.meta, { name: "robots", content: "index, follow, max-image-preview:large" }], links: head.links };
+  },
   component: Page,
 });
 
 function Page() {
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      breadcrumbJsonLd([
+        { name: "FindBuyAgent", path: "/" },
+        { name: "Merchants", path: "/merchants" },
+      ]),
+      {
+        "@type": "TechArticle",
+        headline: "Let agents buy from you with x402, and keep your checkout.",
+        description: DESCRIPTION,
+        dateModified: "2026-11-02",
+        url: `${ORIGIN}/merchants`,
+        author: { "@type": "Organization", name: "FindBuyAgent", url: `${ORIGIN}/` },
+      },
+      {
+        "@type": "HowTo",
+        name: "Accept an x402 payment",
+        step: [
+          { "@type": "HowToStep", position: 1, text: "Answer an unpaid GET with HTTP 402 and an accepts object on Base mainnet." },
+          { "@type": "HowToStep", position: 2, text: "Put your own payTo address, USDC asset, amount, and network eip155:8453 in accepts." },
+          { "@type": "HowToStep", position: 3, text: "On the retry, give the payment header to a facilitator and return 200 only after settlement." },
+        ],
+      },
+    ],
+  };
   return (
     <SiteShell>
-      <div className="wrap section">
-        <h1>Merchants</h1>
-        <p>Live x402 merchants from the public registries. Prices are whatever the merchant asks. Example data is labelled in the demo, not here.</p>
-      </div>
-      <Suspense fallback={<p className="wrap">Loading merchants…</p>}>
-        <DevApp embedded />
-      </Suspense>
+      <JsonLd data={data} />
+      <MerchantsPage />
     </SiteShell>
   );
 }

@@ -1,28 +1,68 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Doc, docHead } from "@/components/pages/doc";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { JsonLd } from "@/components/findbuy/shell";
+import { SiteShell } from "@/components/shell/site-shell";
+import { ORIGIN, breadcrumbJsonLd, pageHead } from "@/content/seo";
+
+const TITLE = "FAQ: Mandates, x402, Receipts | FindBuyAgent";
+const DESCRIPTION = "Keys, x402, mandates, chains, and what happens when you decline. FindBuyAgent does not hold funds.";
+
+const QA = [
+  ["Does FindBuyAgent hold my money?", "No. USDC stays in your wallet until you sign an exact transfer. This site cannot move it."],
+  ["Does FindBuyAgent hold my keys?", "No. There is no seed phrase field and no key import. Your wallet signs."],
+  ["What is x402?", "A way for a server to answer HTTP 402 with an exact USDC price. Your wallet signs that amount. A facilitator settles it."],
+  ["Is this live?", "Yes, for x402 resources your wallet can settle. A purchase receipt is saved only after a Base mainnet transaction hash comes back."],
+  ["What is a mandate?", "Rules checked before a signature: mode, a per-buy cap, a time window, merchant and payee allowlists, chains, and blocked categories."],
+  ["Can the agent raise its own limits?", "No. Only you can change them, in the mandate builder. Nothing is raised silently."],
+  ["What chains can I pay on?", "Base, Polygon, Arbitrum, Optimism, Ethereum, Avalanche, and BNB, in USDC, when the merchant accepts that chain. Receipts are recorded for Base mainnet transaction hashes."],
+  ["What happens if I decline?", "Nothing is signed. Decline can leave a local audit note. No transfer is created."],
+  ["Where are receipts stored?", "In this browser only. You can export or clear them. They are not a bank record."],
+  ["How is this different from ChatGPT shopping?", "You hold the key, you set standing rules, and a receipt is a hash you can check. ChatGPT commerce uses a delegated card token and an in-chat confirm. See the comparison."],
+];
 
 export const Route = createFileRoute("/faq")({
-  head: () => docHead("FAQ | FindBuyAgent", "Keys, the demo, mandates, and declining a buy. No savings or return promises.", "/faq"),
+  head: () => {
+    const head = pageHead({ title: TITLE, description: DESCRIPTION, path: "/faq" });
+    return { meta: [...head.meta, { name: "robots", content: "index, follow, max-image-preview:large" }], links: head.links };
+  },
   component: Page,
 });
 
-const QA = [
-  ["Does FindBuyAgent hold my keys?", "No. There is no seed phrase field and no key import. Your wallet signs."],
-  ["Does the demo move funds?", "The example stores do not. If you confirm the x402 testnet step, your wallet may sign a $0.01 Base Sepolia authorization. The demo does not submit it."],
-  ["What gets saved in the browser?", "A public address, chain id, rules, signatures you already made, and demo receipts. Not a key."],
-  ["What if a rule fails?", "The buy stops. The label says nothing was signed."],
-  ["Is a lower price guaranteed?", "No. Example prices are examples. Live merchant prices are whatever that merchant asks at the time."],
-];
-
 function Page() {
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      breadcrumbJsonLd([
+        { name: "FindBuyAgent", path: "/" },
+        { name: "FAQ", path: "/faq" },
+      ]),
+      {
+        "@type": "FAQPage",
+        url: `${ORIGIN}/faq`,
+        mainEntity: QA.map(([name, text]) => ({
+          "@type": "Question",
+          name,
+          acceptedAnswer: { "@type": "Answer", text },
+        })),
+      },
+    ],
+  };
   return (
-    <Doc title="FAQ">
-      {QA.map(([q, a]) => (
-        <section key={q}>
-          <h2>{q}</h2>
-          <p>{a}</p>
-        </section>
-      ))}
-    </Doc>
+    <SiteShell>
+      <JsonLd data={data} />
+      <article className="wrap section">
+        <h1>FAQ</h1>
+        {QA.map(([question, answer]) => (
+          <section key={question}>
+            <h2>{question}</h2>
+            <p>{answer}</p>
+          </section>
+        ))}
+        <p>
+          <Link to="/compare">Compare</Link>
+          {" · "}
+          <Link to="/security">Security</Link>
+        </p>
+      </article>
+    </SiteShell>
   );
 }

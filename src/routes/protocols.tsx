@@ -1,37 +1,51 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Doc, docHead } from "@/components/pages/doc";
+import { JsonLd } from "@/components/findbuy/shell";
+import { ProtocolsPage, PROTOCOL_FAQS } from "@/components/pages/protocols-page";
+import { SiteShell } from "@/components/shell/site-shell";
+import { ORIGIN, breadcrumbJsonLd, pageHead } from "@/content/seo";
+
+const TITLE = "x402 vs AP2 vs ACP: Agent Payment Protocols | FindBuyAgent";
+const DESCRIPTION = "How x402, AP2, ACP, Visa TAP, and Mastercard Agent Pay split identity, checkout, and settlement. Sources are linked.";
 
 export const Route = createFileRoute("/protocols")({
-  head: () => docHead("Protocols | FindBuyAgent", "Short notes on x402, AP2, ACP, Visa TAP, and Mastercard Agent Pay. No partnerships are claimed.", "/protocols"),
+  head: () => {
+    const head = pageHead({ title: TITLE, description: DESCRIPTION, path: "/protocols" });
+    return { meta: [...head.meta, { name: "robots", content: "index, follow, max-image-preview:large" }], links: head.links };
+  },
   component: Page,
 });
 
 function Page() {
+  const data = {
+    "@context": "https://schema.org",
+    "@graph": [
+      breadcrumbJsonLd([
+        { name: "FindBuyAgent", path: "/" },
+        { name: "Protocols", path: "/protocols" },
+      ]),
+      {
+        "@type": "TechArticle",
+        headline: TITLE,
+        description: DESCRIPTION,
+        datePublished: "2026-11-01",
+        dateModified: "2026-11-02",
+        url: `${ORIGIN}/protocols`,
+        author: { "@type": "Organization", name: "FindBuyAgent", url: `${ORIGIN}/` },
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: PROTOCOL_FAQS.map(([name, text]) => ({
+          "@type": "Question",
+          name,
+          acceptedAnswer: { "@type": "Answer", text },
+        })),
+      },
+    ],
+  };
   return (
-    <Doc title="Protocols">
-      <section id="x402">
-        <h2>x402</h2>
-        <p>HTTP can answer 402 Payment Required. x402 is a way for the client to sign a payment and retry. A facilitator checks the signature and settles it. FindBuyAgent uses that path only from your wallet.</p>
-        <p><a href="/blog/what-is-x402">Essay: what is x402</a></p>
-      </section>
-      <section id="ap2">
-        <h2>AP2</h2>
-        <p>Google has described an Agent Payments Protocol for payment intents between agents. This page is a pointer, not an integration.</p>
-      </section>
-      <section id="acp">
-        <h2>ACP</h2>
-        <p>The Agentic Commerce Protocol is a published checkout-intent format for an agent to hand a merchant what the person asked to buy. FindBuyAgent does not claim to speak it yet.</p>
-      </section>
-      <section id="visa-tap">
-        <h2>Visa TAP</h2>
-        <p>Visa’s Trusted Agent Protocol is the merchant-facing check described alongside Visa Intelligent Commerce: is this agent still inside the instruction it was given?</p>
-        <p><a href="/blog/trusted-agent-protocol">Essay: Trusted Agent Protocol</a></p>
-      </section>
-      <section id="mastercard-agent-pay">
-        <h2>Mastercard Agent Pay</h2>
-        <p>Mastercard has described Agent Pay for Machines as a voucher inside a limit, in the same family as an x402 payment. This site does not settle those vouchers.</p>
-        <p><a href="/blog/what-is-x402">Where the blog discusses it</a></p>
-      </section>
-    </Doc>
+    <SiteShell>
+      <JsonLd data={data} />
+      <ProtocolsPage />
+    </SiteShell>
   );
 }
