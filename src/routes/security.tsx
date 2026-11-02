@@ -43,7 +43,7 @@ function Page() {
     <SiteShell>
       <JsonLd data={data} />
       <article className="wrap section">
-        <h1>Security</h1>
+        <h1>Your keys never leave your wallet</h1>
         <section>
           <h2>Keys</h2>
           <p>Keys never enter this browser. FindBuyAgent does not ask for a seed phrase, and it cannot import or generate one.</p>

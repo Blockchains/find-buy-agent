@@ -73,7 +73,7 @@ function Page() {
           />
         </Field>
         <h2>Allowlist</h2>
-        <ul>
+        <ul className="inset-list">
           {settings.hosts.map((host) => (
             <li key={host}>
               {host}{" "}

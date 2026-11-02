@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { JsonLd } from "@/components/findbuy/shell";
 import { SiteShell } from "@/components/shell/site-shell";
 import { ORIGIN, breadcrumbJsonLd, pageHead } from "@/content/seo";
@@ -28,6 +29,12 @@ export const Route = createFileRoute("/faq")({
 });
 
 function Page() {
+  const [query, setQuery] = useState("");
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return QA;
+    return QA.filter(([question, answer]) => `${question} ${answer}`.toLowerCase().includes(q));
+  }, [query]);
   const data = {
     "@context": "https://schema.org",
     "@graph": [
@@ -51,12 +58,19 @@ function Page() {
       <JsonLd data={data} />
       <article className="wrap section">
         <h1>FAQ</h1>
-        {QA.map(([question, answer]) => (
-          <section key={question}>
+        <label className="ui-field">
+          <span className="sr">Search questions</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search questions" />
+        </label>
+        <div className="faq-list">
+        {shown.map(([question, answer]) => (
+          <section key={question} id={question.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}>
             <h2>{question}</h2>
             <p>{answer}</p>
           </section>
         ))}
+        </div>
+        {shown.length === 0 ? <p role="status">No question matches that.</p> : null}
         <p>
           <Link to="/compare">Compare</Link>
           {" · "}

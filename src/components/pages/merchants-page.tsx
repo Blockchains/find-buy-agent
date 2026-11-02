@@ -165,6 +165,14 @@ export function MerchantsPage() {
       <section>
         <h2>CDP Bazaar</h2>
         {error ? <p role="status">{error}</p> : null}
+        {offers.length === 0 && !error ? (
+          <div className="card-list" aria-hidden="true">
+            <div className="skel" />
+            <div className="skel" />
+            <div className="skel" />
+            <div className="skel" />
+          </div>
+        ) : null}
         <div className="card-list">
           {offers.map((offer) => {
             const accept = offer.accepts[0];

@@ -14,15 +14,10 @@ export function HomePage() {
   const posts = listings().slice(0, 3);
   return (
     <div className="wrap">
-      <section className="hero" aria-labelledby="home-title">
+      <section className="hero aurora" aria-labelledby="home-title">
         <p className="fine-note">FindBuyAgent</p>
-        <h1 id="home-title">An agent that finds it, asks first, and lets you sign.</h1>
-        <p className="lede">FindBuyAgent compares stores, checks every buy against rules you set, and settles with x402 from your own wallet. No keys leave your wallet.</p>
-        <div className="cta-row">
-          <Link className="ui-btn primary" to="/merchants">See live merchants</Link>
-          <Link className="ui-btn secondary" to="/mandates">Build a mandate</Link>
-        </div>
-        <p className="fine-note">You sign in your own wallet. FindBuyAgent does not hold funds.</p>
+        <h1 id="home-title">Let your agent buy. You stay in control.</h1>
+        <p className="lede">Type what you need. Live prices come from each merchant’s 402. You approve the amount, then your wallet signs on Base.</p>
       </section>
       <LiveShop />
       <section className="section" aria-labelledby="routes">
@@ -41,11 +36,11 @@ export function HomePage() {
         </div>
       </section>
       <section className="section" aria-labelledby="how">
-        <h2 id="how">How it works</h2>
+        <h2 id="how">Ask, approve, paid on Base</h2>
         <div className="grid-3">
-          <Card><h3>Find</h3><p>Type it, paste a link, or use a photo name. Live prices are whatever the merchant asks in the 402.</p></Card>
-          <Card><h3>Ask</h3><p>Every buy is checked against your mandate. Anything outside it waits for you.</p></Card>
-          <Card><h3>Sign</h3><p>Your wallet signs an exact-amount authorization. You get a receipt. FindBuyAgent does not hold the funds.</p></Card>
+          <Card><h3>Ask</h3><p>The intent box ranks live resources. The price is whatever that 402 asks right now.</p></Card>
+          <Card><h3>Approve</h3><p>Amount, chain, and payee stay on the sheet. Decline signs nothing.</p></Card>
+          <Card><h3>Paid on Base</h3><p>A receipt is stored only after a Base transaction hash comes back.</p></Card>
         </div>
       </section>
       <section className="section" aria-labelledby="why">

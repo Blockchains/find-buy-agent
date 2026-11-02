@@ -46,7 +46,7 @@ function BlogIndex() {
             return (
               <section key={series} id={series.toLowerCase().replace(/\s+/g, "-")} className="series-block">
                 <h2>{series}</h2>
-                <ol className="post-list">
+                <ol className="post-list post-grid">
                   {items.map((item) => (
                     <li key={item.slug}>
                       <Card item={item} />
@@ -61,9 +61,26 @@ function BlogIndex() {
   );
 }
 
+function Cover({ title }: { title: string }) {
+  let seed = 0;
+  for (const char of title) seed = (seed * 33 + char.charCodeAt(0)) >>> 0;
+  const bars = [0, 1, 2, 3, 4].map((index) => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return 16 + (seed % 48);
+  });
+  return (
+    <svg className="cover" viewBox="0 0 320 72" aria-hidden="true">
+      {bars.map((height, index) => (
+        <rect key={index} x={16 + index * 60} y={72 - height} width="36" height={height} rx="8" fill={index % 2 ? "var(--brand)" : "var(--muted)"} opacity={index % 2 ? 0.85 : 0.35} />
+      ))}
+    </svg>
+  );
+}
+
 function Lead({ item }: { item: Listing }) {
   return (
     <article className="lead-card">
+      <Cover title={item.title} />
       <p className="kicker">{item.kicker}</p>
       <h2>
         <PostLink item={item} />
@@ -81,6 +98,7 @@ function Lead({ item }: { item: Listing }) {
 function Card({ item }: { item: Listing }) {
   return (
     <article>
+      <Cover title={item.title} />
       <p className="byline">
         <time dateTime={item.date}>{item.date}</time>
         <span aria-hidden>·</span>

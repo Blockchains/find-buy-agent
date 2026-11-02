@@ -178,7 +178,9 @@ function Page() {
           </Field>
         </div>
         {filtered.length === 0 ? (
-          <EmptyState title="No receipts yet">No receipts yet. A receipt appears after a Base mainnet transaction hash comes back.</EmptyState>
+          <EmptyState title="No live payments yet">
+            No live payments yet. <Link to="/">Make your first $0.001 purchase</Link> when OneSource’s live price is that amount. A receipt appears only after a Base transaction hash comes back.
+          </EmptyState>
         ) : (
           <table className="ui-table audit-table">
             <thead>

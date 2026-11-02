@@ -1,89 +1,123 @@
 :root {
   --bg: #fafaf7;
   --surface: #ffffff;
-  --surface-2: #f2f2ec;
-  --text: #121417;
-  --muted: #5b6470;
-  --border: #e3e3dc;
-  --accent: #0f7b5f;
-  --warn: #946000;
-  --stop: #b42318;
-  --info: #2457c5;
-  --on-accent: #f7fffb;
-  --shadow: 0 1px 2px rgba(18, 20, 23, 0.06);
-  --shadow-lift: 0 12px 32px rgba(18, 20, 23, 0.08);
+  --surface-2: #f4f5f2;
+  --ink: #0b0d12;
+  --text: var(--ink);
+  --muted: #5b6170;
+  --line: #e6e7eb;
+  --border: var(--line);
+  --brand: #3b5bff;
+  --brand-ink: #ffffff;
+  --accent: var(--brand);
+  --on-accent: var(--brand-ink);
+  --ok: #12b76a;
+  --warn: #f59e0b;
+  --err: #e5484d;
+  --stop: var(--err);
+  --info: var(--brand);
+  --usdc: #2775ca;
+  --violet: #7c5cff;
+  --teal: #14b8a6;
+  --e1: 0 1px 2px rgb(0 0 0 / 0.06);
+  --e2: 0 4px 16px -4px rgb(16 24 40 / 0.12);
+  --e3: 0 24px 48px -12px rgb(16 24 40 / 0.24);
+  --shadow: var(--e1);
+  --shadow-lift: var(--e2);
   --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --space: 4px;
-  --ease: 160ms ease-out;
-  --ease-slow: 240ms ease-out;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --pill: 999px;
+  --fast: 120ms;
+  --base: 200ms;
+  --slow: 360ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-slow: var(--slow) var(--ease);
+  --space: 8px;
+  --max: 1120px;
+  --read: 680px;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b0d10;
-    --surface: #12151a;
-    --surface-2: #1a1e24;
-    --text: #eceef1;
-    --muted: #9aa3ae;
-    --border: #262b33;
-    --accent: #3ddc97;
-    --warn: #ffb547;
-    --stop: #ff6b5e;
-    --info: #7aa2ff;
-    --on-accent: #062117;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.35);
+    --bg: #07080c;
+    --surface: #0f1117;
+    --surface-2: #161922;
+    --ink: #f4f5f7;
+    --text: var(--ink);
+    --muted: #9aa1b2;
+    --line: #1e2230;
+    --border: var(--line);
+    --brand: #3b5bff;
+    --brand-ink: #ffffff;
+    --accent: var(--brand);
+    --on-accent: var(--brand-ink);
+    --ok: #12b76a;
+    --warn: #f59e0b;
+    --err: #e5484d;
+    --stop: var(--err);
+    --info: #8aa0ff;
+    --usdc: #4c8fe0;
+    --e1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --e2: 0 4px 16px -4px rgb(0 0 0 / 0.45);
+    --e3: 0 24px 48px -12px rgb(0 0 0 / 0.55);
+    --shadow: var(--e1);
+    --shadow-lift: var(--e3);
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --bg: #0b0d10;
-  --surface: #12151a;
-  --surface-2: #1a1e24;
-  --text: #eceef1;
-  --muted: #9aa3ae;
-  --border: #262b33;
-  --accent: #3ddc97;
-  --warn: #ffb547;
-  --stop: #ff6b5e;
-  --info: #7aa2ff;
-  --on-accent: #062117;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-lift: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --bg: #07080c;
+  --surface: #0f1117;
+  --surface-2: #161922;
+  --ink: #f4f5f7;
+  --text: var(--ink);
+  --muted: #9aa1b2;
+  --line: #1e2230;
+  --border: var(--line);
+  --brand: #3b5bff;
+  --brand-ink: #ffffff;
+  --accent: var(--brand);
+  --on-accent: var(--brand-ink);
+  --ok: #12b76a;
+  --warn: #f59e0b;
+  --err: #e5484d;
+  --stop: var(--err);
+  --info: #8aa0ff;
+  --usdc: #4c8fe0;
+  --e1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --e2: 0 4px 16px -4px rgb(0 0 0 / 0.45);
+  --e3: 0 24px 48px -12px rgb(0 0 0 / 0.55);
+  --shadow: var(--e1);
+  --shadow-lift: var(--e3);
   color-scheme: dark;
 }
 
 :root[data-theme="light"] {
-  --bg: #fafaf7;
-  --surface: #ffffff;
-  --surface-2: #f2f2ec;
-  --text: #121417;
-  --muted: #5b6470;
-  --border: #e3e3dc;
-  --accent: #0f7b5f;
-  --warn: #946000;
-  --stop: #b42318;
-  --info: #2457c5;
-  --on-accent: #f7fffb;
-  --shadow: 0 1px 2px rgba(18, 20, 23, 0.06);
-  --shadow-lift: 0 12px 32px rgba(18, 20, 23, 0.08);
   color-scheme: light;
 }
 
 body {
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
+  font-family: "Inter Variable", Inter, "Helvetica Neue", sans-serif;
+  font-weight: 400;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .site *,
-  .site *::before,
-  .site *::after {
-    animation: none !important;
-    transition: none !important;
-  }
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-weight: 650;
+}
+
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--base);
 }

@@ -38,6 +38,7 @@ export function LiveShop() {
   const [settings, setSettingsState] = useState<Settings>(defaultSettings);
   const [developer, setDeveloper] = useState(false);
   const [spent, setSpent] = useState(0);
+  const [slow, setSlow] = useState(false);
 
   const ranked = useMemo(() => rankItems(items, query), [items, query]);
   const current = ranked.find((item) => item.id === selected) ?? ranked[0];
@@ -64,6 +65,10 @@ export function LiveShop() {
   }, []);
 
   useEffect(() => {
+    if (window.matchMedia("(min-width: 800px)").matches) document.getElementById("intent")?.focus();
+  }, []);
+
+  useEffect(() => {
     if (loadSettings().reducedMotion) return;
     const timer = window.setInterval(() => setHint((value) => (value + 1) % INTENT_EXAMPLES.length), 4000);
     return () => window.clearInterval(timer);
@@ -75,8 +80,10 @@ export function LiveShop() {
       if (cancelled) return;
       setProbes(Object.fromEntries(rows));
     });
+    const timer = window.setTimeout(() => setSlow(true), 3000);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -99,6 +106,7 @@ export function LiveShop() {
 
   useEffect(() => {
     if (!receipt) return;
+    navigator.vibrate?.(10);
     let stop = false;
     const poll = async () => {
       const response = await fetch("https://mainnet.base.org", {
@@ -256,25 +264,32 @@ export function LiveShop() {
       >
         <label className="ui-field">
           <span className="sr">Intent</span>
-          <input value={query} placeholder={INTENT_EXAMPLES[hint]} onChange={(event) => setQuery(event.target.value)} />
+          <input id="intent" value={query} placeholder={INTENT_EXAMPLES[hint]} onChange={(event) => setQuery(event.target.value)} />
         </label>
       </form>
-      <div className="card-list">
+      <div className="catalog-strip">
         {ranked.map((item) => {
           const row = probes[item.url];
           const terms = row?.accepts.find(isBaseUsdc);
           const usd = terms ? amountUsd(terms.amount) : null;
           const on = item.id === current?.id;
+          if (!row && !item.discovered) {
+            return <div key={item.id} className="skel" aria-hidden="true" />;
+          }
           return (
             <button key={item.id} type="button" className={on ? "ui-card pick on" : "ui-card pick"} onClick={() => setSelected(item.id)}>
               <strong>{item.title}</strong>
-              <span>{row?.error ? row.error : usd === null ? "Reading the live 402…" : `${money(usd)} USDC · Base`}</span>
+              <span>
+                {usd !== null ? <i className="live-dot" aria-hidden="true" /> : null}
+                {row?.error ? row.error : usd === null ? "Reading the live 402…" : `${money(usd)} USDC · Base`}
+              </span>
               <Badge status="ask">Unaudited third-party</Badge>
               {item.discovered ? <span className="fine-note">Reported by Coinbase Bazaar{item.payers ? ` · ${item.payers} payers in 30 days` : ""}</span> : null}
             </button>
           );
         })}
       </div>
+      {slow && ranked.some((item) => !probes[item.url]) ? <p role="status">Still fetching live prices…</p> : null}
       {current && review && price !== null ? (
         <p className="chip-row" aria-label="Rule checks">
           <Badge status={review.reason === "per_buy_cap" ? "stop" : "go"}>{review.reason === "per_buy_cap" ? "cap ✕" : "cap ✓"}</Badge>
@@ -361,7 +376,10 @@ export function LiveShop() {
         </p>
       ) : null}
       {receipt ? (
-        <article className="ui-card paid">
+        <article className="ui-card paid stamp">
+          <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+            <path className="check-draw" d="M8 18 l7 7 13-14" fill="none" strokeWidth="2.5" />
+          </svg>
           <p className="seal">Paid</p>
           <p>
             {receipt.amount} USDC · {receipt.host}

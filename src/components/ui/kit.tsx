@@ -37,7 +37,7 @@ export function Callout({ tone = "note", children }: { tone?: "note" | "warn"; c
 
 export function Stepper({ steps, current, onStep }: { steps: string[]; current: number; onStep: (index: number) => void }) {
   return (
-    <div className="stepper" role="tablist" aria-label="Demo steps">
+    <div className="stepper" role="tablist" aria-label="Steps">
       {steps.map((step, index) => (
         <button key={step} type="button" role="tab" aria-selected={index === current} aria-current={index === current ? "step" : undefined} tabIndex={index === current ? 0 : -1} onClick={() => onStep(index)} onKeyDown={(event) => {
           if (event.key === "ArrowRight") onStep(Math.min(steps.length - 1, index + 1));
@@ -89,7 +89,11 @@ export function HashPill({ value, href }: { value: string; href?: string }) {
 
 export function EmptyState({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="ui-card">
+    <div className="ui-card empty">
+      <svg className="empty-art" viewBox="0 0 96 72" aria-hidden="true">
+        <rect x="18" y="8" width="60" height="56" rx="8" fill="none" stroke="currentColor" strokeWidth="1.75" />
+        <path d="M30 24h36M30 36h24" stroke="var(--brand)" strokeWidth="1.75" />
+      </svg>
       <h2>{title}</h2>
       <p>{children}</p>
     </div>
@@ -127,6 +131,7 @@ export function Sheet({ title, children, onClose }: { title: string; children: R
   return (
     <div className="sheet-back" onMouseDown={onClose}>
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="sheet-handle" aria-hidden="true" />
         <h2 id={titleId}>{title}</h2>
         {children}
       </div>

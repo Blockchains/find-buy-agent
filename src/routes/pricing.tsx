@@ -39,7 +39,7 @@ function Page() {
         <h1>Pricing</h1>
         <article className="ui-card">
           <h2>Free</h2>
-          <p>No fees are charged by FindBuyAgent during the preview. Network gas and merchant prices apply.</p>
+          <p>FindBuyAgent charges no fee. You pay the merchant’s listed USDC price. An EIP-3009 authorization is settled by the facilitator, so you do not send a separate gas transaction for that transfer.</p>
           <p>Future pricing will be announced before any fee applies.</p>
         </article>
         <h2>Tell me when that changes</h2>

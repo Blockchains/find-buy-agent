@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { relatedListings } from "@/content/posts";
 import type { Block, Post } from "@/content/posts/types";
 import { ORIGIN } from "@/content/seo";
@@ -85,9 +86,20 @@ export function PostView({ post }: { post: Post }) {
   const toc = post.blocks.filter((block): block is Extract<Block, { type: "h2" }> => block.type === "h2");
   const related = relatedListings(post.related);
   const url = `${ORIGIN}/blog/${post.slug}`;
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const height = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(height > 0 ? Math.min(1, window.scrollY / height) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <article className="essay">
+      <div className="progress" style={{ transform: `scaleX(${progress})` }} />
       <nav className="crumbs" aria-label="Breadcrumb">
         <Link to="/">FindBuyAgent.com</Link>
         <span aria-hidden>/</span>

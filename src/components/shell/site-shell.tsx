@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, Sheet } from "@/components/ui/kit";
 import { JsonLd } from "@/components/findbuy/shell";
 import { breadcrumbJsonLd } from "@/content/seo";
@@ -76,6 +76,7 @@ function applyTheme(mode: "system" | "light" | "dark") {
 }
 
 export function SiteShell({ children }: { children: ReactNode }) {
+  const headerRef = useRef<HTMLElement>(null);
   const path = useRouterState({ select: (state) => state.location.pathname });
   const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
   const [wallet, setWallet] = useState<{ address: string; chainId: string } | null>(null);
@@ -103,6 +104,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
       if (current) void readUsdcBalance(current.address, "8453").then(setUsdc);
     };
     window.addEventListener("fba-receipts", onReceipt);
+    const onScroll = () => headerRef.current?.classList.toggle("is-shrunk", window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
     const query = window.matchMedia("(prefers-color-scheme: dark)");
     const onScheme = () => {
       if (localStorage.getItem("fba-theme") === "system" || !localStorage.getItem("fba-theme")) applyTheme("system");
@@ -113,6 +117,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       window.removeEventListener("fba-wallet", onWallet);
       window.removeEventListener("fba-connect", openConnect);
       window.removeEventListener("fba-receipts", onReceipt);
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
@@ -136,13 +141,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <a className="skip" href="#content">
         Skip to content
       </a>
-      <header className="site-header">
+      <header className="site-header" ref={headerRef}>
         <Link to="/" className="wordmark">
           FindBuyAgent
         </Link>
         <nav className="site-nav" aria-label="Primary">
           {LINKS.map((item) => (
-            <Link key={item.to} to={item.to} aria-current={path === item.to ? "page" : undefined}>
+            <Link key={item.to} to={item.to} preload="intent" aria-current={path === item.to ? "page" : undefined}>
               {item.label}
             </Link>
           ))}
@@ -229,14 +234,14 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <p>FindBuyAgent never holds your keys or funds.</p>
       </footer>
       <nav className="tabbar" aria-label="Mobile">
-        <Link to="/" aria-current={path === "/" ? "page" : undefined}>
+        <Link to="/" preload="intent" aria-current={path === "/" ? "page" : undefined}>
           Find
         </Link>
-        <Link to="/mandates" aria-current={path === "/mandates" ? "page" : undefined}>
-          Mandate
-        </Link>
-        <Link to="/receipts" aria-current={path === "/receipts" ? "page" : undefined}>
+        <Link to="/receipts" preload="intent" aria-current={path === "/receipts" ? "page" : undefined}>
           Receipts
+        </Link>
+        <Link to="/mandates" preload="intent" aria-current={path === "/mandates" ? "page" : undefined}>
+          Rules
         </Link>
         <button type="button" onClick={() => setMore((value) => !value)}>
           More
