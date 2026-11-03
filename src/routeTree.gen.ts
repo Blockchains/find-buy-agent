@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as FiatRouteImport } from './routes/fiat'
 import { Route as MandatesRouteImport } from './routes/mandates'
 import { Route as MerchantsRouteImport } from './routes/merchants'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -36,6 +37,11 @@ const CompareRoute = CompareRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FiatRoute = FiatRouteImport.update({
+  id: '/fiat',
+  path: '/fiat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MandatesRoute = MandatesRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/faq': typeof FaqRoute
+  '/fiat': typeof FiatRoute
   '/mandates': typeof MandatesRoute
   '/merchants': typeof MerchantsRoute
   '/pricing': typeof PricingRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/faq': typeof FaqRoute
+  '/fiat': typeof FiatRoute
   '/mandates': typeof MandatesRoute
   '/merchants': typeof MerchantsRoute
   '/pricing': typeof PricingRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/faq': typeof FaqRoute
+  '/fiat': typeof FiatRoute
   '/mandates': typeof MandatesRoute
   '/merchants': typeof MerchantsRoute
   '/pricing': typeof PricingRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/faq'
+    | '/fiat'
     | '/mandates'
     | '/merchants'
     | '/pricing'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/faq'
+    | '/fiat'
     | '/mandates'
     | '/merchants'
     | '/pricing'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/faq'
+    | '/fiat'
     | '/mandates'
     | '/merchants'
     | '/pricing'
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompareRoute: typeof CompareRoute
   FaqRoute: typeof FaqRoute
+  FiatRoute: typeof FiatRoute
   MandatesRoute: typeof MandatesRoute
   MerchantsRoute: typeof MerchantsRoute
   PricingRoute: typeof PricingRoute
@@ -220,6 +233,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fiat': {
+      id: '/fiat'
+      path: '/fiat'
+      fullPath: '/fiat'
+      preLoaderRoute: typeof FiatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mandates': {
@@ -299,6 +319,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompareRoute: CompareRoute,
   FaqRoute: FaqRoute,
+  FiatRoute: FiatRoute,
   MandatesRoute: MandatesRoute,
   MerchantsRoute: MerchantsRoute,
   PricingRoute: PricingRoute,

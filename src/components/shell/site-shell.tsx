@@ -6,6 +6,7 @@ import { breadcrumbJsonLd } from "@/content/seo";
 import { bindWalletEvents, chainLabel, connectProvider, disconnectWallet, discoverWallets, ensureChain, isBaseMainnet, readPublicWallet, readUsdcBalance, type WalletChoice } from "@/lib/market/wallet";
 
 const LINKS = [
+  { to: "/fiat", label: "FIAT" },
   { to: "/", label: "Find" },
   { to: "/mandates", label: "Mandates" },
   { to: "/receipts", label: "Receipts" },
@@ -16,6 +17,7 @@ const LINKS = [
 ] as const;
 
 const NAMES: Record<string, string> = {
+  "/fiat": "FIAT",
   "/mandates": "Mandates",
   "/receipts": "Receipts",
   "/protocols": "Protocols",
@@ -234,11 +236,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <p>FindBuyAgent never holds your keys or funds.</p>
       </footer>
       <nav className="tabbar" aria-label="Mobile">
+        <Link to="/fiat" preload="intent" aria-current={path === "/fiat" ? "page" : undefined}>
+          FIAT
+        </Link>
         <Link to="/" preload="intent" aria-current={path === "/" ? "page" : undefined}>
           Find
-        </Link>
-        <Link to="/receipts" preload="intent" aria-current={path === "/receipts" ? "page" : undefined}>
-          Receipts
         </Link>
         <Link to="/mandates" preload="intent" aria-current={path === "/mandates" ? "page" : undefined}>
           Rules
@@ -249,6 +251,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </nav>
       {more ? (
         <div className="more-panel">
+          <Link to="/fiat" onClick={() => setMore(false)}>FIAT</Link>
+          <Link to="/receipts" onClick={() => setMore(false)}>Receipts</Link>
           <Link to="/protocols" onClick={() => setMore(false)}>Protocols</Link>
           <Link to="/compare" onClick={() => setMore(false)}>Compare</Link>
           <Link to="/merchants" onClick={() => setMore(false)}>Merchants</Link>

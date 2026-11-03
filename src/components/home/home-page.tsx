@@ -18,12 +18,13 @@ export function HomePage() {
         <p className="fine-note">FindBuyAgent</p>
         <h1 id="home-title">Let your agent buy. You stay in control.</h1>
         <p className="lede">Type what you need. Live prices come from each merchant’s 402. You approve the amount, then your wallet signs on Base.</p>
+        <p><Link className="ui-btn primary" to="/fiat">Shop with FIAT</Link></p>
       </section>
       <LiveShop />
       <section className="section" aria-labelledby="routes">
         <h2 id="routes">On this site</h2>
         <div className="chip-row">
-          <Chip href="/mandates">Mandates</Chip>
+          <Chip href="/fiat">FIAT</Chip>
           <Chip href="/receipts">Receipts</Chip>
           <Chip href="/protocols">Protocols</Chip>
           <Chip href="/compare">Compare</Chip>

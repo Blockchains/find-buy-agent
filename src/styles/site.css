@@ -1058,3 +1058,151 @@ html[data-reduce="1"] .check-draw {
   animation: none;
 }
 
+.fiat-page h1 {
+  font-size: clamp(32px, 5vw, 52px);
+  max-width: 16ch;
+}
+.fiat {
+  display: grid;
+  grid-template-columns: minmax(280px, 390px) minmax(0, 1fr);
+  gap: 16px;
+  margin: 24px 0 48px;
+  color: #f4f5f7;
+}
+.fiat-phone, .fiat-side {
+  background: #0c0e14;
+  border: 1px solid #1e2230;
+  border-radius: 24px;
+  box-shadow: 0 24px 48px -12px rgb(0 0 0 / 0.35);
+}
+.fiat-phone {
+  padding: 18px 18px 20px;
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+.fiat-top, .fiat-actions, .fiat-stats, .fiat-region, .fiat dl div, .fiat-jobs button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fiat-pill, .fiat-badge {
+  border-radius: 999px;
+  border: 1px solid #2a3142;
+  padding: 4px 10px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fiat-pill.is-hot, .fiat-badge.is-hot {
+  background: #3b5bff;
+  border-color: #3b5bff;
+  color: #fff;
+}
+.fiat-kicker {
+  margin: 22px 0 8px;
+  color: #9aa1b2;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.fiat-ask, .fiat-card { display: flex; flex-direction: column; flex: 1; }
+.fiat textarea, .fiat input, .fiat select {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid #2a3142;
+  background: #12151c;
+  color: #f4f5f7;
+  font: inherit;
+  padding: 12px;
+}
+.fiat textarea { resize: vertical; min-height: 88px; }
+.fiat-conds { display: grid; gap: 10px; margin-top: 12px; }
+.fiat-conds span, .fiat-region span, .fiat dt { color: #9aa1b2; font-size: 12px; }
+.fiat-go, .fiat-ghost {
+  min-height: 56px;
+  border-radius: 999px;
+  border: 0;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fiat-go {
+  margin-top: 16px;
+  background: linear-gradient(180deg, #3b5bff, #5a3bff);
+  color: #fff;
+}
+.fiat-ghost {
+  margin-top: 16px;
+  background: transparent;
+  color: #f4f5f7;
+  border: 1px solid #2a3142;
+}
+.fiat-actions { margin-top: auto; }
+.fiat-actions .fiat-go, .fiat-actions .fiat-ghost { flex: 1; margin-top: 0; }
+.fiat-amount {
+  font-size: 44px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0;
+}
+.fiat-quiet, .fiat-last, .fiat-rule span { color: #9aa1b2; }
+.fiat dl { margin: 16px 0 20px; display: grid; gap: 10px; }
+.fiat dd { margin: 0; text-align: right; }
+.fiat-side { padding: 18px; }
+.fiat-stats p { margin: 0; display: grid; }
+.fiat-stats strong { font-size: 28px; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.fiat-stats span, .fiat-jobs em { color: #9aa1b2; font-style: normal; font-size: 13px; }
+.fiat-region { margin: 16px 0; }
+.fiat-region select { max-width: 220px; }
+.fiat-jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fiat-jobs button {
+  width: 100%;
+  text-align: left;
+  background: #12151c;
+  color: inherit;
+  border: 1px solid #1e2230;
+  border-radius: 16px;
+  padding: 12px;
+  min-height: 64px;
+  cursor: pointer;
+}
+.fiat-jobs button.is-on { outline: 2px solid #3b5bff; }
+.fiat-jobs button:disabled { cursor: default; }
+.fiat-jobs strong, .fiat-jobs em { display: block; }
+.fiat-letter {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: #1a1f2c;
+  font-weight: 650;
+}
+.fiat-rule { margin-top: 16px; }
+.fiat-notice { color: #f59e0b; }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+@media (max-width: 800px) {
+  .fiat { grid-template-columns: 1fr; }
+  .fiat-phone { min-height: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fiat-go:active { transform: none; }
+}
+
