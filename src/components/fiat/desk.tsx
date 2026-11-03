@@ -92,9 +92,9 @@ function money(currency: string, value: number) {
   return `${currency}${value.toLocaleString(undefined, { minimumFractionDigits: value % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
 }
 
-export function FiatDesk() {
+export function FiatDesk({ initialQuery = "" }: { initialQuery?: string }) {
   const [regionId, setRegionId] = useState("GB");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [cap, setCap] = useState("80");
   const [note, setNote] = useState("");
   const [phase, setPhase] = useState<Phase>("ask");

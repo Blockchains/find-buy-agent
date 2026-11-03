@@ -257,6 +257,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <Link to="/compare" onClick={() => setMore(false)}>Compare</Link>
           <Link to="/merchants" onClick={() => setMore(false)}>Merchants</Link>
           <Link to="/blog" onClick={() => setMore(false)}>Blog</Link>
+          <Link to="/settings" onClick={() => setMore(false)}>Settings</Link>
         </div>
       ) : null}
       {choices ? (
